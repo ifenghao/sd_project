@@ -1,0 +1,15 @@
+.vscode
+.idea
+
+venv
+__pycache__
+
+train/*
+!train/new lora will be create.txt
+raw_images/*
+!raw_images/put raw image here.txt
+outputs/*
+!outputs/lora inference result.txt
+models/*
+!models/stable-diffusion/put ckpt model here.txt
+
