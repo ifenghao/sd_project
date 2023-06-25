@@ -14,5 +14,5 @@ python ../sd-scripts/gen_img_diffusers.py \
 	--network_mul 1 \
 	--from_file ${infer_path}/prompt.txt \
 	--xformers \
-	--fp16 \
+	--bf16 \
 	--images_per_prompt 3 \

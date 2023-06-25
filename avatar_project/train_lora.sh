@@ -18,23 +18,26 @@ accelerate launch --num_cpu_threads_per_process=4 ../sd-scripts/train_network.py
     --save_model_as=safetensors \
     --network_module=networks.lora \
     --resolution=512,512 \
-    --network_alpha="32" \
-    --text_encoder_lr=1e-5 \
-    --unet_lr=1e-4 \
     --network_dim=32 \
+    --network_alpha=32 \
+    --network_args "conv_dim=32" \
+    --text_encoder_lr=1e-5 \
+    --network_train_unet_only \
+    --unet_lr=1e-4 \
     --lr_scheduler_num_cycles="10" \
     --learning_rate="1e-5" \
     --lr_scheduler="cosine_with_restarts"\
     --train_batch_size="1" \
-    --max_train_steps="4000" \
-    --save_every_n_epochs="1" \
-    --mixed_precision="fp16" \
-    --save_precision="fp16" \
+    --max_train_steps="1000" \
+    --save_every_n_epochs="2" \
+    --mixed_precision="bf16" \
+    --save_precision="bf16" \
     --cache_latents \
     --optimizer_type="AdamW8bit" \
-    --max_data_loader_n_workers="0" \
+    --max_data_loader_n_workers="16" \
     --bucket_reso_steps=64 \
     --bucket_no_upscale  \
     --sample_sampler=euler_a \
-    --sample_every_n_steps="200"
+    --sample_every_n_steps="100" \
+    --xformers
     

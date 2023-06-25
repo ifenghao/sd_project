@@ -11,7 +11,7 @@ infer_prompt_same_with_train=true
 
 
 # infer variable
-infer_lora_name=zfh2_20230624225500-000046.safetensors
+infer_lora_name=zfh2_20230625225812-000004.safetensors
 
 # train config
 image_raw_path=./raw_images

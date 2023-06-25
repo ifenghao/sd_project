@@ -11,5 +11,5 @@ raw_images/*
 outputs/*
 !outputs/lora inference result.txt
 models/*
+!models/put all models here.txt
 !models/stable-diffusion/put ckpt model here.txt
-
