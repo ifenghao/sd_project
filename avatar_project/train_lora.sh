@@ -8,7 +8,7 @@ source ./config.sh
 
 date_str=`date +'%Y%m%d%H%M%S'`
 
-accelerate launch --num_cpu_threads_per_process=4 ../sd-scripts/train_network.py \
+accelerate launch --num_cpu_threads_per_process=4 train_network_online.py \
     --pretrained_model_name_or_path=${checkpoint_file} \
     --train_data_dir=${train_image_path} \
     --output_dir=${train_output_model_path} \
@@ -26,7 +26,7 @@ accelerate launch --num_cpu_threads_per_process=4 ../sd-scripts/train_network.py
     --unet_lr=1e-4 \
     --lr_scheduler_num_cycles="10" \
     --learning_rate="1e-5" \
-    --lr_scheduler="cosine_with_restarts"\
+    --lr_scheduler="cosine_with_restarts" \
     --train_batch_size="1" \
     --max_train_steps="1000" \
     --save_every_n_epochs="2" \

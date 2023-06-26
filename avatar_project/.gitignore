@@ -4,6 +4,8 @@
 venv
 __pycache__
 
+conf.json
+
 train/*
 !train/new lora will be create.txt
 raw_images/*
@@ -13,3 +15,6 @@ outputs/*
 models/*
 !models/put all models here.txt
 !models/stable-diffusion/put ckpt model here.txt
+
+train_online/*
+!train/new lora will be create.txt
