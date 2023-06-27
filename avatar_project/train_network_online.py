@@ -70,7 +70,7 @@ def sample_images(
         return []
     if args.sample_every_n_epochs is not None:
         # sample_every_n_steps は無視する
-        if epoch is None or epoch % args.sample_every_n_epochs != 0:
+        if epoch is None or epoch % args.sample_every_n_epochs != 0 or epoch < args.sample_min_epochs:
             return []
     else:
         if steps % args.sample_every_n_steps != 0 or epoch is not None:  # steps is not divisible or end of epoch
@@ -1149,7 +1149,8 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.learning_rate=1e-5
     args.lr_scheduler="cosine_with_restarts"
     args.train_batch_size=1
-    args.max_train_steps=1000
+    args.max_train_steps=1000  # ignored
+    args.max_train_epochs=10
     args.save_every_n_epochs=2
     args.mixed_precision="bf16"
     args.save_precision="bf16"
@@ -1159,7 +1160,9 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
     args.sample_sampler="euler_a"
-    args.sample_every_n_steps=100
+    args.sample_every_n_steps=100  # ignored
+    args.sample_every_n_epochs=1
+    args.sample_min_epochs=5
     args.xformers=True
 
     output_images_all = train(args)

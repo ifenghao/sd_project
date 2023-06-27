@@ -29,7 +29,7 @@ class HandleOSSUtil(object):
         @param oss_dir:   oss上的output路径: userdata-image-output/20001_O12023061915104587300001_1.jpg
         @return:
         '''
-        result = self.bucket.put_object(oss_path, file_path)
+        result = self.bucket.put_object_from_file(oss_path, file_path)
         if result.status == 200:
             return 1
  

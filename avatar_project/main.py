@@ -21,7 +21,6 @@ def grab_order():
     mysql_manager_conn = MysqlManager() 
     select_sql = "SELECT * FROM mm_order WHERE order_status = 1 AND is_deleted = 0 ORDER BY create_time ASC LIMIT 1"
     result     = mysql_manager_conn.getOne(select_sql)
-    print(result)
 
     if result:
         order_id   = result['order_id']
@@ -124,5 +123,4 @@ if __name__ == '__main__':
                     logger.error('order_id:{},update_status3 fail'.format(order_id)) 
         else:
             logger.info('本次未抢到单')
-        break
         time.sleep(5)  # 休眠5秒 
