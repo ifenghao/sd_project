@@ -18,7 +18,7 @@ class ModelImageProcessor:
         self.age = age
         self.style_code = style_code
 
-    def prepare_paths(self, num_repeat="10"):
+    def prepare_paths(self, num_repeat="50"):
         root_path = "./train_online"
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
         self.raw_input_path = os.path.join(self.model_input_path, "{}_raw".format(num_repeat))

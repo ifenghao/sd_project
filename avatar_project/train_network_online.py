@@ -1150,7 +1150,7 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.lr_scheduler="cosine_with_restarts"
     args.train_batch_size=1
     args.max_train_steps=1000
-    args.save_every_n_epochs=4
+    args.save_every_n_epochs=2
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
@@ -1159,7 +1159,7 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
     args.sample_sampler="euler_a"
-    args.sample_every_n_steps=200
+    args.sample_every_n_steps=100
     args.xformers=True
 
     output_images_all = train(args)

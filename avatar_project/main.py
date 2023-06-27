@@ -24,7 +24,6 @@ def grab_order():
     print(result)
 
     if result:
-        return result
         order_id   = result['order_id']
         update_sql = "UPDATE mm_order SET order_status = 2 WHERE order_id = %s AND order_status = 1 "
         affected_rows = mysql_manager_conn.update(update_sql, (order_id,))
@@ -98,7 +97,7 @@ if __name__ == '__main__':
                 #TODO1: STEP3 train model and predict
                 local_output_dict = processor.process()
                 print(local_output_dict)
-                logger.info('order_id:{},模型训练和预测结束') 
+                logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                 
                 # STEP4: 上传oss 并获取url  
                 oss_output_dict   = defaultdict(list)
@@ -106,7 +105,7 @@ if __name__ == '__main__':
                 for style,local_output in local_output_dict.items():
                     for file_path in local_output:
                         file_name = file_path.split('/')[-1]
-                        oss_path  = f'{oss_dir}/{file_name}' 
+                        oss_path  = f'{oss_dir}/{file_name}'
                         uploadoss_result = handle_oss_util.update_one_file(oss_path,file_path)
                         if uploadoss_result :
                             oss_output_dict[style].append(oss_path) 
@@ -118,11 +117,11 @@ if __name__ == '__main__':
                 else:
                     logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
                 # STEP6: 更新mm_order 中的状态
-                # num_update_status3 = update_order_status(order_id) 
-                # if num_update_status3 == 1 :
-                #     logger.info('order_id:{},update_status3 success'.format(order_id)) 
-                # else:
-                #     logger.error('order_id:{},update_status3 fail'.format(order_id)) 
+                num_update_status3 = update_order_status(order_id) 
+                if num_update_status3 == 1 :
+                    logger.info('order_id:{},update_status3 success'.format(order_id)) 
+                else:
+                    logger.error('order_id:{},update_status3 fail'.format(order_id)) 
         else:
             logger.info('本次未抢到单')
         break

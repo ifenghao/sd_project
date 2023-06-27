@@ -1,0 +1,17 @@
+[2023-06-26 22:05:38]: PID:757 thread:140439137112704 file:main.py line:128 func:<module> INFO 本次未抢到单
+[2023-06-26 22:07:34]: PID:759 thread:140013383545472 file:main.py line:129 func:<module> INFO 本次未抢到单
+[2023-06-26 23:35:04]: PID:929 thread:140555380417152 file:main.py line:126 func:<module> INFO 本次未抢到单
+[2023-06-26 23:36:30]: PID:966 thread:139960430957184 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:36:34]: PID:966 thread:139960430957184 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:37:37]: PID:1004 thread:140086568977024 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:37:42]: PID:1004 thread:140086568977024 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:38:42]: PID:1041 thread:139862791828096 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:38:46]: PID:1041 thread:139862791828096 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:46:46]: PID:1437 thread:140162428129920 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:46:51]: PID:1437 thread:140162428129920 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:49:21]: PID:1517 thread:139718766948992 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:49:25]: PID:1517 thread:139718766948992 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:51:45]: PID:1583 thread:140065468428928 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:51:49]: PID:1583 thread:140065468428928 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
+[2023-06-26 23:54:10]: PID:1649 thread:140588081472128 file:main.py line:82 func:<module> INFO 抢单成功,user_id:O12023061322330073900001,order_id:O12023061915104587300002,sex_code:100001,age:25,style_code:200002
+[2023-06-26 23:54:14]: PID:1649 thread:140588081472128 file:main.py line:96 func:<module> INFO order_id:O12023061915104587300002,共下载1张图片
