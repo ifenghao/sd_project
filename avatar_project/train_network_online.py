@@ -1151,7 +1151,7 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.train_batch_size=1
     args.max_train_steps=1000  # ignored
     args.max_train_epochs=10
-    args.save_every_n_epochs=2
+    args.save_every_n_epochs=5
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
