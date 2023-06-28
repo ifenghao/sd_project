@@ -1145,9 +1145,9 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.text_encoder_lr=1e-5
     args.network_train_unet_only=True
     args.unet_lr=1e-4
-    args.lr_scheduler_num_cycles=10
+    args.lr_warmup_steps=200
     args.learning_rate=1e-5
-    args.lr_scheduler="cosine_with_restarts"
+    args.lr_scheduler="constant_with_warmup"
     args.train_batch_size=1
     args.max_train_steps=1000  # ignored
     args.max_train_epochs=10
