@@ -70,7 +70,7 @@ def sample_images(
         return []
     if args.sample_every_n_epochs is not None:
         # sample_every_n_steps は無視する
-        if epoch is None or epoch % args.sample_every_n_epochs != 0 or epoch < args.sample_min_epochs:
+        if epoch is None or epoch % args.sample_every_n_epochs != 0 or epoch <= args.sample_min_epochs:
             return []
     else:
         if steps % args.sample_every_n_steps != 0 or epoch is not None:  # steps is not divisible or end of epoch

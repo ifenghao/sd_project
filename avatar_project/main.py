@@ -19,7 +19,7 @@ handle_oss_util = HandleOSSUtil(key_id=config["oss_config"]["key_id"],
 def grab_order(): 
     ''':Description:抢单'''
     mysql_manager_conn = MysqlManager() 
-    select_sql = "SELECT * FROM mm_order WHERE order_status = 1 AND is_deleted = 0 ORDER BY create_time ASC LIMIT 1"
+    select_sql = "SELECT * FROM mm_order WHERE order_status = 1 AND is_deleted = 0 ORDER BY pay_time ASC LIMIT 1"
     result     = mysql_manager_conn.getOne(select_sql)
 
     if result:
@@ -94,7 +94,7 @@ if __name__ == '__main__':
                 logger.info('order_id:{},共下载{}张图片'.format(order_id,str(num_photo)))
                     
                 #TODO1: STEP3 train model and predict
-                local_output_dict = processor.process()
+                local_output_dict = processor.process(logger)
                 print(local_output_dict)
                 logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
                 # STEP5: 将结果url 存入 mm_ai_order_photo
                 num_insert_photo = insert_ai_order_photo(user_id, order_id, oss_output_dict)
                 if num_insert_photo > 0 :
-                    logger.info('order_id:{}, save mm_ai_order_photo success'.format(order_id)) 
+                    logger.info('order_id:{},save mm_ai_order_photo success'.format(order_id)) 
                 else:
                     logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
                 # STEP6: 更新mm_order 中的状态

@@ -18,3 +18,4 @@ models/*
 
 train_online/*
 !train/new lora will be create.txt
+logs/*
