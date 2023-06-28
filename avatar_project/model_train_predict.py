@@ -18,7 +18,7 @@ class ModelImageProcessor:
         self.age = age
         self.style_code = style_code
 
-    def prepare_paths(self, num_repeat="10"):
+    def prepare_paths(self, num_repeat="40"):
         root_path = "./train_online"
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
         self.raw_input_path = os.path.join(self.model_input_path, "{}_raw".format(num_repeat))
@@ -46,11 +46,17 @@ class ModelImageProcessor:
             if style_code in prompt_dict:
                 prompt = prompt_dict[style_code]
                 prompt_list.append("{} --n {}\n".format(prompt['pos'], prompt['neg']))
+        if len(prompt_list) == 0:
+            return False
         with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
             f.writelines(prompt_list)
+        return True
     
     def process(self, logger):
-        self.generate_prompt()
+        success = self.generate_prompt()
+        if not success:
+            logger.info('order_id:{},没有风格用于生成 {}'.format(self.order_id))
+            return []
         # 训练模型
         try:
             output_images = train_online(self.order_id, 
