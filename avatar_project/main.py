@@ -11,7 +11,8 @@ from urllib.parse import urlparse
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")  
 # log_dir = "logs" 
 logger  = init_logger(log_dir, "main") 
-config  = json.load(open("conf.json", encoding='utf-8'))  
+config  = json.load(open("conf.json", encoding='utf-8'))
+server_code = '0' #temp_add, 机器号
 handle_oss_util = HandleOSSUtil(key_id=config["oss_config"]["key_id"], 
                                 key_secret=config["oss_config"]["key_secret"], 
                                 bucket=config["oss_config"]["bucket_name"]) 
@@ -24,8 +25,8 @@ def grab_order():
 
     if result:
         order_id   = result['order_id']
-        update_sql = "UPDATE mm_order SET order_status = 2 WHERE order_id = %s AND order_status = 1 "
-        affected_rows = mysql_manager_conn.update(update_sql, (order_id,))
+        update_sql = "UPDATE mm_order SET order_status = 2,server_code =%s WHERE order_id = %s AND order_status = 1"
+        affected_rows = mysql_manager_conn.update(update_sql, (server_code,order_id,))
         mysql_manager_conn.dispose()
 
         if affected_rows == 1:
@@ -45,11 +46,11 @@ def insert_ai_order_photo(user_id, order_id, output_dict):
     ''':Description:结果图片url 存入 mm_ai_order_photo'''
     mysql_manager_conn = MysqlManager()
     affected_rows = 0
-    insert_sql = "INSERT INTO mm_ai_order_photo (user_id, order_id, style_code, photo_url) VALUES (%s, %s, %s, %s)"
+    insert_sql = "INSERT INTO mm_ai_order_photo (user_id, order_id, server_code, style_code, photo_url) VALUES (%s, %s,%s,%s, %s)"
     values = []
     for style_code, photo_urls in output_dict.items():
         for photo_url in photo_urls:
-            values.append((user_id, order_id, style_code, photo_url))      
+            values.append((user_id, order_id, server_code, style_code, photo_url))      
     if values:
         affected_rows = mysql_manager_conn.insertMany(insert_sql, values)
     
