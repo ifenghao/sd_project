@@ -52,7 +52,7 @@ class ModelImageProcessor:
     def process(self, logger):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
-            logger.info('order_id:{},没有风格用于生成 {}'.format(self.order_id))
+            logger.info('order_id:{},没有风格用于生成'.format(self.order_id))
             return []
         # 训练模型
         try:

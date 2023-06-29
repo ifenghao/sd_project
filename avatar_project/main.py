@@ -134,5 +134,5 @@ if __name__ == '__main__':
                 else:
                     logger.error('本次模型预测无结果, order_id:{}'.format(order_id)) 
         else:
-            logger.info('本次未抢到单')
+            print('本次未抢到单')
         time.sleep(5)  # 休眠5秒 
