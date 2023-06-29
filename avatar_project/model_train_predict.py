@@ -33,8 +33,8 @@ class ModelImageProcessor:
         return self.raw_input_path
 
     def generate_prompt(self):
-        sex_str, age_str = generate_info_prompt(self.sex_code, self.age)
-        prompt_dict = generate_prompt_dict(sex_str, age_str)
+        sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
+        prompt_dict = generate_prompt_dict(sex_str, sex2_str, age_str)
         prompt_list = []
         style_code_list = str(self.style_code).split(',')
         valid_style_code_list = []
@@ -94,6 +94,7 @@ def generate_info_prompt(sex_code, age):
         return index
 
     sex_str = 'human'
+    sex2_str = 'male'
     age_str = '{age} year old'.format(age=age)
     male_obj_list = ['boy', ' young man', 'man']
     male_age_list = [16, 28]
@@ -102,12 +103,14 @@ def generate_info_prompt(sex_code, age):
 
     if int(sex_code) == 100001:
         sex_str = male_obj_list[get_age_index(age, male_age_list)]
+        sex2_str = 'male'
     elif int(sex_code) == 100002:
         sex_str = female_obj_list[get_age_index(age, female_age_list)]
-    return sex_str, age_str
+        sex2_str = 'female'
+    return sex_str, age_str, sex2_str
 
 
-def generate_prompt_dict(sex_str, age_str):
+def generate_prompt_dict(sex_str, sex2_str, age_str):
     prompt_dict = {
         '200001': {
             'pos': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
@@ -138,7 +141,7 @@ def generate_prompt_dict(sex_str, age_str):
             'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot"
         },
         '200008': {
-            'pos': "(masterpiece, best quality:1.2), from side, solo, male focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, age=age_str),
+            'pos': "(masterpiece, best quality:1.2), from side, solo, {sex2} focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, sex2=sex2_str, age=age_str),
             'neg': ""
         },
     }
