@@ -99,29 +99,40 @@ if __name__ == '__main__':
                 print(local_output_dict)
                 logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                 
-                # STEP4: 上传oss 并获取url  
-                oss_output_dict   = defaultdict(list)
-                oss_dir = config["oss_config"]["output_file"] 
-                for style,local_output in local_output_dict.items():
-                    for file_path in local_output:
-                        file_name = file_path.split('/')[-1]
-                        oss_path  = f'{oss_dir}/{file_name}'
-                        uploadoss_result = handle_oss_util.update_one_file(oss_path,file_path)
-                        if uploadoss_result :
-                            oss_output_dict[style].append(oss_path) 
-                
-                # STEP5: 将结果url 存入 mm_ai_order_photo
-                num_insert_photo = insert_ai_order_photo(user_id, order_id, oss_output_dict)
-                if num_insert_photo > 0 :
-                    logger.info('order_id:{},save mm_ai_order_photo success'.format(order_id)) 
+                if len(local_output_dict) > 0 : 
+                    # STEP4: 上传oss 并获取url  
+                    num_upload_photo = 0
+                    oss_output_dict  = defaultdict(list)
+                    oss_dir = config["oss_config"]["output_file"] 
+                    for style,local_output in local_output_dict.items():
+                        for file_path in local_output:
+                            file_name = file_path.split('/')[-1]
+                            oss_path  = f'{oss_dir}/{file_name}' 
+                            try: 
+                                uploadoss_result = handle_oss_util.update_one_file(oss_path,file_path) 
+                                if uploadoss_result :
+                                    num_upload_photo +=1 
+                                    logger.info('图片上传oss成功,order_id:{},file_name:{}'.format(order_id,file_name)) 
+                                    oss_output_dict[style].append(oss_path) 
+                            except Exception as e:
+                                logger.error('上传文件时发生异常:{},order_id:{},file_name:{}'.format(str(e),order_id,file_name))
+                    logger.info('order_id:{},共上传{}张图片到oss'.format(order_id,str(num_upload_photo))) 
+                  
+                    # STEP5: 将结果url 存入 mm_ai_order_photo
+                    num_insert_photo = insert_ai_order_photo(user_id, order_id, oss_output_dict)
+                    if num_insert_photo > 0 :
+                        logger.info('order_id:{}, save mm_ai_order_photo success'.format(order_id)) 
+                    else:
+                        logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
+                      
+                    # STEP6: 更新mm_order 中的状态
+                    num_update_status3 = update_order_status(order_id) 
+                    if num_update_status3 == 1 :
+                        logger.info('order_id:{},update_status3 success'.format(order_id)) 
+                    else:
+                        logger.error('order_id:{},update_status3 fail'.format(order_id)) 
                 else:
-                    logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
-                # STEP6: 更新mm_order 中的状态
-                num_update_status3 = update_order_status(order_id) 
-                if num_update_status3 == 1 :
-                    logger.info('order_id:{},update_status3 success'.format(order_id)) 
-                else:
-                    logger.error('order_id:{},update_status3 fail'.format(order_id)) 
+                    logger.error('本次模型预测无结果, order_id:{}'.format(order_id)) 
         else:
             logger.info('本次未抢到单')
         time.sleep(5)  # 休眠5秒 
