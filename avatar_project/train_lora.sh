@@ -41,6 +41,6 @@ accelerate launch --num_cpu_threads_per_process=4 train_network_online.py \
     --sample_sampler=euler_a \
     --sample_every_n_steps="100" \
     --sample_every_n_epochs=1 \
-    --max_train_epochs=2 \
+    --sample_min_epochs=2 \
     --xformers
     
