@@ -46,7 +46,7 @@ class MysqlManager(object):
                 maxcached=50,
                 maxusage=10,
                 host=mysql_dict["DBHOST"],
-                port=mysql_dict["DBPORT"],
+                # port=mysql_dict["DBPORT"],
                 user=mysql_dict["DBUSER"],
                 passwd=mysql_dict["DBPWD"],
                 db=mysql_dict["database"])

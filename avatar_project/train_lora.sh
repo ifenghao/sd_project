@@ -24,12 +24,13 @@ accelerate launch --num_cpu_threads_per_process=4 train_network_online.py \
     --text_encoder_lr=1e-5 \
     --network_train_unet_only \
     --unet_lr=1e-4 \
-    --lr_scheduler_num_cycles="10" \
+    --lr_warmup_steps="200" \
     --learning_rate="1e-5" \
-    --lr_scheduler="cosine_with_restarts" \
+    --lr_scheduler="constant_with_warmup" \
     --train_batch_size="1" \
     --max_train_steps="1000" \
-    --save_every_n_epochs="2" \
+    --max_train_epochs="10" \
+    --save_every_n_epochs="5" \
     --mixed_precision="bf16" \
     --save_precision="bf16" \
     --cache_latents \
@@ -39,5 +40,7 @@ accelerate launch --num_cpu_threads_per_process=4 train_network_online.py \
     --bucket_no_upscale  \
     --sample_sampler=euler_a \
     --sample_every_n_steps="100" \
+    --sample_every_n_epochs=1 \
+    --max_train_epochs=2 \
     --xformers
     

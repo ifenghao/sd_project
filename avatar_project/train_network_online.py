@@ -1119,6 +1119,12 @@ def setup_parser() -> argparse.ArgumentParser:
         nargs="*",
         help="multiplier for network weights to merge into the model before training / 学習前にあらかじめモデルにマージするnetworkの重みの倍率",
     )
+    parser.add_argument(
+        "--sample_min_epochs",
+        type=float,
+        default=0,
+        help="sample wait for minimun epochs",
+    )
     return parser
 
 
@@ -1151,7 +1157,7 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.train_batch_size=1
     args.max_train_steps=1000  # ignored
     args.max_train_epochs=10
-    args.save_every_n_epochs=5
+    args.save_every_n_epochs=2
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
@@ -1162,7 +1168,7 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.sample_sampler="euler_a"
     args.sample_every_n_steps=100  # ignored
     args.sample_every_n_epochs=1
-    args.sample_min_epochs=5
+    args.sample_min_epochs=2
     args.xformers=True
 
     output_images_all = train(args)

@@ -7,11 +7,11 @@ negative_prompt="easyNegative,(realistic),(3d face),(worst quality:1.2), (low qu
 
 # train variable
 num_repeat="10"
-infer_prompt_same_with_train=true
+infer_prompt_same_with_train=0
 
 
 # infer variable
-infer_lora_name=zfh2_20230625225812-000004.safetensors
+infer_lora_name=O12023063022124042200080-000002.safetensors
 
 # train config
 image_raw_path=./raw_images
@@ -37,6 +37,6 @@ infer_lora_path=${train_output_model_path}/${infer_lora_name}
 if [ ! -d ${infer_path} ]; then
 	mkdir -p ${infer_path}
 fi
-if [[ infer_prompt_same_with_train ]]; then
+if [[ infer_prompt_same_with_train -eq 1 ]]; then
 	echo "${positive_prompt} --n ${negative_prompt}" > ${infer_path}/prompt.txt
 fi

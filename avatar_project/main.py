@@ -112,7 +112,6 @@ if __name__ == '__main__':
                                 uploadoss_result = handle_oss_util.update_one_file(oss_path,file_path) 
                                 if uploadoss_result :
                                     num_upload_photo +=1 
-                                    logger.info('图片上传oss成功,order_id:{},file_name:{}'.format(order_id,file_name)) 
                                     oss_output_dict[style].append(oss_path) 
                             except Exception as e:
                                 logger.error('上传文件时发生异常:{},order_id:{},file_name:{}'.format(str(e),order_id,file_name))
@@ -121,7 +120,7 @@ if __name__ == '__main__':
                     # STEP5: 将结果url 存入 mm_ai_order_photo
                     num_insert_photo = insert_ai_order_photo(user_id, order_id, oss_output_dict)
                     if num_insert_photo > 0 :
-                        logger.info('order_id:{}, save mm_ai_order_photo success'.format(order_id)) 
+                        logger.info('order_id:{},save mm_ai_order_photo success'.format(order_id)) 
                     else:
                         logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
                       
