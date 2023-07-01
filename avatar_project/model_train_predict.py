@@ -22,6 +22,7 @@ class ModelImageProcessor:
         root_path = "./train_online"
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
         self.raw_input_path = os.path.join(self.model_input_path, "{}_raw".format(num_repeat))
+        self.raw_input_crop_path = os.path.join(self.model_input_path, "{}_crop".format(num_repeat))
         self.model_path = os.path.join(root_path, self.order_id, "model")
         self.log_path = os.path.join(root_path, self.order_id, "log")
         self.output_path = os.path.join(root_path, self.order_id, "output")
@@ -30,7 +31,7 @@ class ModelImageProcessor:
         os.makedirs(self.model_path, exist_ok=True)
         os.makedirs(self.log_path, exist_ok=True)
         os.makedirs(self.output_path, exist_ok=True)
-        return self.raw_input_path
+        return self.raw_input_path,self.raw_input_crop_path
 
     def generate_prompt(self):
         sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
