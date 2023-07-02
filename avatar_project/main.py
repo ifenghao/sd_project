@@ -13,70 +13,66 @@ log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 # log_dir = "logs" 
 logger  = init_logger(log_dir, "main") 
 config  = json.load(open("conf.json", encoding='utf-8'))
-server_code = '0' #temp_add, 机器号
+server_code = config['server_code']
 handle_oss_util = HandleOSSUtil(key_id=config["oss_config"]["key_id"], 
                                 key_secret=config["oss_config"]["key_secret"], 
                                 bucket=config["oss_config"]["bucket_name"])
+mysql_manager_conn = MysqlManager() #创建连接池
 
 def grab_order(): 
     ''':Description:抢单'''
-    try:
-        mysql_manager_conn = MysqlManager() 
+    try: 
         select_sql = "SELECT * FROM mm_order WHERE order_status = 1 AND is_deleted = 0 ORDER BY pay_time ASC LIMIT 1"
         result     = mysql_manager_conn.getOne(select_sql)
 
         if result:
             order_id   = result['order_id']
-            update_sql = "UPDATE mm_order SET order_status = 2,server_code =%s WHERE order_id = %s AND order_status = 1"
+            update_sql = "UPDATE mm_order SET order_status = 2,server_code = %s WHERE order_id = %s AND order_status = 1"
             affected_rows = mysql_manager_conn.update(update_sql, (server_code,order_id,))
-            mysql_manager_conn.dispose()
 
             if affected_rows == 1:
                 return result 
-        mysql_manager_conn.dispose()
+            
     except Exception as e:
         logger.error('grab_order出错{}'.format(e))
-    return None
+        return None 
 
 def get_order_photos(order_id):
     ''':Description:根据order_id 从mm_order_photo获取用户上传的照片'''
     photos_info = []
     try:
-        mysql_manager_conn = MysqlManager()
         photo_sql   = "SELECT * FROM mm_order_photo WHERE order_id = %s"
-        photos_info = mysql_manager_conn.getAll(photo_sql, (order_id,)) #多条数据
-        mysql_manager_conn.dispose()
+        photos_info = mysql_manager_conn.getAll(photo_sql, (order_id,)) 
     except Exception as e:
         logger.error('order_id:{},get_order_photos出错{}'.format(order_id, e))
-    return photos_info
+    return photos_info   
 
 def insert_ai_order_photo(user_id, order_id, output_dict):
-    ''':Description:结果图片url 存入 mm_ai_order_photo'''
-    affected_rows = 0
+    ''':Description:结果图片url 存入 mm_ai_order_photo,
+    改成一个风格进行批量插入'''
+    affected_rows_all = 0
     try:
-        mysql_manager_conn = MysqlManager()
         insert_sql = "INSERT INTO mm_ai_order_photo (user_id, order_id, server_code, style_code, photo_url) VALUES (%s, %s,%s,%s, %s)"
-        values = []
+        
         for style_code, photo_urls in output_dict.items():
+            values = []
             for photo_url in photo_urls:
                 values.append((user_id, order_id, server_code, style_code, photo_url))      
-        if values:
-            affected_rows = mysql_manager_conn.insertMany(insert_sql, values)
-        
-        mysql_manager_conn.dispose()
+            if values:
+                affected_rows = mysql_manager_conn.insertMany(insert_sql, values)
+                affected_rows_all +=affected_rows
+    
     except Exception as e:
         logger.error('order_id:{},insert_ai_order_photo出错{}'.format(order_id, e))
-    return affected_rows
+    return affected_rows_all
 
-def update_order_status(order_id):
+def update_order_status_res(res_status,order_id):
     affected_rows = 0
     try:
-        mysql_manager_conn = MysqlManager()
-        update_sql = "UPDATE mm_order SET order_status = 3 WHERE order_id = %s AND order_status = 2"
-        affected_rows = mysql_manager_conn.update(update_sql, (order_id,))
-        mysql_manager_conn.dispose()
+        update_sql = "UPDATE mm_order SET order_status = %s WHERE order_id = %s AND order_status = 2"
+        affected_rows = mysql_manager_conn.update(update_sql, (res_status,order_id,))    
     except Exception as e:
-        logger.error('order_id:{},insert_ai_order_photo出错{}'.format(order_id, e))
+        logger.error('order_id:{},update_order_status_res出错{}'.format(order_id, e))
     return affected_rows
 
 
@@ -93,31 +89,31 @@ if __name__ == '__main__':
             style_code = grab_result['style_code']
             logger.info('抢单成功,user_id:{},order_id:{},sex_code:{},age:{},style_code:{}'.format(user_id,order_id,sex_code,age,style_code))
             
-            #STEP2: 提取用户上传图片,下载到input文件夹
-            photos_info = get_order_photos(order_id)
-            if photos_info and len(photos_info)>0 : 
-                model_processor = ModelImageProcessor(logger, user_id, order_id, sex_code, age, style_code) 
-                image_recieve_path, image_crop_path = model_processor.prepare_paths()
+            try : 
+                #STEP2: 提取用户上传图片,下载到input文件夹
+                photos_info = get_order_photos(order_id)
+                if photos_info and len(photos_info)>0 : 
+                    model_processor = ModelImageProcessor(logger, user_id, order_id, sex_code, age, style_code) 
+                    image_recieve_path, image_crop_path = model_processor.prepare_paths()
 
-                num_photo = 0 
-                for photo_info in photos_info : 
-                    oss_input_file    = photo_info['photo_url']  
-                    downloadoss_result= handle_oss_util.download_one_file(oss_input_file, image_recieve_path)
-                    if downloadoss_result ==1:
-                        num_photo+=1
-                logger.info('order_id:{},共下载{}张图片'.format(order_id,str(num_photo)))
+                    num_photo = 0 
+                    for photo_info in photos_info : 
+                        oss_input_file    = photo_info['photo_url']  
+                        downloadoss_result= handle_oss_util.download_one_file(oss_input_file, image_recieve_path)
+                        if downloadoss_result ==1:
+                            num_photo+=1
+                    logger.info('order_id:{},共下载{}张图片'.format(order_id,str(num_photo)))
 
-                #STEP 2.5: 对下载的图片进行截取
-                preprocessor = ModelPreprocessing(logger)
-                crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
-                logger.info('order_id:{},共截取{}张图片'.format(order_id,str(crop_num)))
+                    #STEP 2.5: 对下载的图片进行截取
+                    preprocessor = ModelPreprocessing(logger)
+                    crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
+                    logger.info('order_id:{},共截取{}张图片'.format(order_id,str(crop_num)))
+                        
+                    #STEP3 train model and predict
+                    local_output_dict = model_processor.process()
+                    print(local_output_dict)
+                    logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                     
-                #TODO1: STEP3 train model and predict
-                local_output_dict = model_processor.process()
-                print(local_output_dict)
-                logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
-                
-                if len(local_output_dict) > 0 : 
                     # STEP4: 上传oss 并获取url  
                     num_upload_photo = 0
                     oss_output_dict  = defaultdict(list)
@@ -133,23 +129,24 @@ if __name__ == '__main__':
                                     oss_output_dict[style].append(oss_path) 
                             except Exception as e:
                                 logger.error('上传文件时发生异常:{},order_id:{},file_name:{}'.format(str(e),order_id,file_name))
-                    logger.info('order_id:{},共上传{}张图片到oss'.format(order_id,str(num_upload_photo))) 
-                  
+                    logger.info('order_id:{},结果图片上传到oss成功, 共{}个风格,共存入{}张'.format(order_id,len(local_output_dict),num_upload_photo)) 
+                
                     # STEP5: 将结果url 存入 mm_ai_order_photo
                     num_insert_photo = insert_ai_order_photo(user_id, order_id, oss_output_dict)
                     if num_insert_photo > 0 :
-                        logger.info('order_id:{},save mm_ai_order_photo success'.format(order_id)) 
+                        logger.info('order_id:{},结果insert 成功,共insert{}张'.format(order_id,num_insert_photo)) 
                     else:
-                        logger.error('order_id:{},save mm_ai_order_photo fail'.format(order_id)) 
-                      
+                        logger.error('order_id:{},结果insert 失败'.format(order_id)) 
+                    
                     # STEP6: 更新mm_order 中的状态
-                    num_update_status3 = update_order_status(order_id) 
+                    num_update_status3 = update_order_status_res(3,order_id) 
                     if num_update_status3 == 1 :
-                        logger.info('order_id:{},update_status3 success'.format(order_id)) 
-                    else:
-                        logger.error('order_id:{},update_status3 fail'.format(order_id)) 
-                else:
-                    logger.error('本次模型预测无结果, order_id:{}'.format(order_id)) 
+                        logger.info('order_id:{},update_status3 成功'.format(order_id)) 
+                    else: 
+                        logger.error('order_id:{},update_status3 失败'.format(order_id)) 
+            except Exception as e:
+                num_update_status5 = update_order_status_res(5,order_id) 
+                logger.error('抢单后发生异常:{},order_id:{},update_status5'.format(str(e),order_id))
         else:
             print('本次未抢到单')
         time.sleep(5)  # 休眠5秒 
