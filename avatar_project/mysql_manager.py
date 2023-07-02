@@ -5,7 +5,7 @@
 # @file:       mysql_manager.py
 # @time:       2023/06/23
 # @Description: 涉及到mysql 的操作
-# @Others:
+# @update: 2023/07/02 修改连接池的使用
 
 import pymysql as MySQLdb
 from pymysql.cursors import DictCursor
@@ -26,69 +26,42 @@ class MysqlManager(object):
 
     def __init__(self):
         """
-        数据库构造函数，从连接池中取出连接，并生成操作游标
+        数据库创建连接池
         """
         self.mysql_dict = config["mysql_databases"]
-        self._conn = MysqlManager.__getConn(self.mysql_dict)
-        self._cursor = self._conn.cursor()
-
-    @staticmethod
-    def __getConn(mysql_dict):
-        """
-        @summary: 静态方法，从连接池中取出连接
-        @return MySQLdb.connection
-        """
         if MysqlManager.__pool is None:
             MysqlManager.__pool = PooledDB(
                 creator=MySQLdb,
                 cursorclass=DictCursor,
                 mincached=1,
-                maxcached=50,
-                maxusage=10,
-                host=mysql_dict["DBHOST"],
-                # port=mysql_dict["DBPORT"],
-                user=mysql_dict["DBUSER"],
-                passwd=mysql_dict["DBPWD"],
-                db=mysql_dict["database"])
-
-        return MysqlManager.__pool.connection()
-
-    def autocommit(self, value):
-        """
-        @summary: 设置是否自动提交事务
-        @param value: bool类型，True表示自动提交，False表示手动提交
-        """
-        self._conn.autocommit(value)
+                maxcached=5,
+                # maxusage=10,
+                host=self.mysql_dict["DBHOST"],
+                # port=self.mysql_dict["DBPORT"],
+                user=self.mysql_dict["DBUSER"],
+                passwd=self.mysql_dict["DBPWD"],
+                db=self.mysql_dict["database"])         
 
     def __query(self, sql, param=None):
-        if param is None:
-            count = self._cursor.execute(sql)
-        else:
-            count = self._cursor.execute(sql, param)
-        return count
+        with self.__pool.connection() as conn:
+            cursor = conn.cursor()
+            if param is None:
+                count = cursor.execute(sql)
+            else:
+                count = cursor.execute(sql, param)
+            cursor.close()
+            conn.commit()  # 提交事务
+            return count
 
-    def excfun(self, sql):
-        try:
-            self._cursor.execute(sql)
-        except:
-            traceback.print_exc()
-            self._conn.rollback()
-        finally:
-            logger.error('mysql 出现问题')
-            self._cursor.close()
-            self._conn.close()
-
-    def countText(self, sql, param=None):
-        if param is None:
-            count = self._cursor.execute(sql)
-        else:
-            count = self._cursor.execute(sql, param)
-        if count > 0:
-            result = self._cursor.fetchone()
-        else:
-            result = 0
-        return result
-
+    def update(self, sql, param=None):
+        """
+        @summary: 更新数据表记录
+        @param sql: ＳＱＬ格式及条件，使用(%s,%s)
+        @param param: 要更新的  值 tuple/list
+        @return: count 受影响的行数
+        """
+        return self.__query(sql, param)
+ 
     def getAll(self, sql, param=None):
         """
         @summary: 执行查询，并取出所有结果集
@@ -96,15 +69,20 @@ class MysqlManager(object):
         @param param: 可选参数，条件列表值（元组/列表）
         @return: result list/boolean 查询到的结果集
         """
-        if param is None:
-            count = self._cursor.execute(sql)
-        else:
-            count = self._cursor.execute(sql, param)
-        if count > 0:
-            result = self._cursor.fetchall()
-        else:
-            result = False
-        return result
+        with self.__pool.connection() as conn:
+            cursor = conn.cursor()
+            if param is None:
+                count = cursor.execute(sql)
+            else:
+                count = cursor.execute(sql, param)
+            if count > 0:
+                result = cursor.fetchall()
+            else:
+                result = False
+
+            cursor.close() 
+            return result
+
 
     def getOne(self, sql, param=None):
         """
@@ -113,35 +91,19 @@ class MysqlManager(object):
         @param param: 可选参数，条件列表值（元组/列表）
         @return: result list/boolean 查询到的结果集
         """
-        if param is None:
-            count = self._cursor.execute(sql)
-        else:
-            count = self._cursor.execute(sql, param)
-        if count > 0:
-            result = self._cursor.fetchone()
-        else:
-            result = False
-        return result
+        with self.__pool.connection() as conn:
+            cursor = conn.cursor() 
+            if param is None:
+                count = cursor.execute(sql)
+            else:
+                count = cursor.execute(sql, param)
+            if count > 0:
+                result = cursor.fetchone()
+            else:
+                result = False
+            cursor.close()
+            return result
 
-    def getMany(self, sql, num, param=None):
-        """
-        @summary: 执行查询，并取出num条结果
-        @param sql:查询ＳＱＬ，如果有查询条件，请只指定条件列表，并将条件值使用参数[param]传递进来
-        @param num:取得的结果条数
-        @param param: 可选参数，条件列表值（元组/列表）
-        @return: result list/boolean 查询到的结果集
-        """
-        if param is None:
-            count = self._cursor.execute(sql)
-        else:
-            count = self._cursor.execute(sql, param)
-        if count > 0:
-            result = self._cursor.fetchmany(num)
-        else:
-            result = False
-        return result
-
-    # @ErrorHandler.error_handler
     def insertOne(self, sql):
         """
         @summary: 向数据表插入一条记录
@@ -149,8 +111,11 @@ class MysqlManager(object):
         @param value:要插入的记录数据tuple/list
         @return: insertId 受影响的行数
         """
-        # return self.excfun(sql)
-        return self._cursor.execute(sql)
+        with self.__pool.connection() as conn: 
+            cursor = conn.cursor() 
+            res = cursor.execute(sql)
+            cursor.close()
+            return res
 
     def insertMany(self, sql, values):
         """
@@ -159,16 +124,12 @@ class MysqlManager(object):
         @param values:要插入的记录数据tuple(tuple)/list[list]
         @return: count 受影响的行数
         """
-        count = self._cursor.executemany(sql, values)
-        return count
-
-    def __getInsertId(self):
-        """
-        获取当前连接最后一次插入操作生成的id,如果没有则为０
-        """
-        self._cursor.execute("SELECT @@IDENTITY AS id")
-        result = self._cursor.fetchall()
-        return result[0]['id']
+        with self.__pool.connection() as conn: 
+            cursor = conn.cursor() 
+            count  = cursor.executemany(sql, values)
+            cursor.close()
+            conn.commit()  # 提交事务
+            return count
 
     def update(self, sql, param=None):
         """
@@ -188,40 +149,5 @@ class MysqlManager(object):
         """
         return self.__query(sql, param)
 
-    def begin(self):
-        """
-        @summary: 开启事务
-        """
-        self._conn.autocommit(0)
-        # self._conn.autocommit(1)
 
-    def end(self, option='commit'):
-        """
-        @summary: 结束事务
-        """
-        if option == 'commit':
-            self._conn.commit()
-        else:
-            self._conn.rollback()
-
-    def dispose(self, isEnd=1):
-        """
-        @summary: 释放连接池资源
-        """
-        if isEnd == 1:
-            self.end('commit')
-        else:
-            self.end('rollback')
-        self._cursor.close()
-        self._conn.close()
-
-
-if __name__ == "__main__":
-    config = json.load(open("../conf.json", encoding='utf-8'))
-
-    conn = MysqlManager("")
-    SQL = '''SELECT * FROM mm_order WHERE order_status = 1 AND is_deleted = 0;)
-          '''
-    conn.getOne(SQL)
-    result = mysql_manager.getOne(sql)
     conn.dispose()
