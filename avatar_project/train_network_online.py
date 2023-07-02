@@ -188,9 +188,9 @@ def sample_images(
                     prompt_args = prompt.split(" --")
                     prompt = prompt_args[0]
                     negative_prompt = None
-                    sample_steps = 30
+                    sample_steps = args.sample_steps
                     width = height = 512
-                    scale = 7.5
+                    scale = args.cfg_scale
                     seed = None
                     for parg in prompt_args:
                         try:
@@ -1163,12 +1163,16 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.cache_latents=True
     args.optimizer_type="AdamW8bit"
     args.max_data_loader_n_workers=16
+    args.enable_bucket=True
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
     args.sample_sampler="euler_a"
     args.sample_every_n_steps=100  # ignored
     args.sample_every_n_epochs=1
     args.sample_min_epochs=2
+    args.cfg_scale=7
+    args.sample_steps=20
+    args.max_token_length=225
     args.xformers=True
 
     output_images_all = train(args)

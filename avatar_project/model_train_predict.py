@@ -3,7 +3,7 @@ import json
 from train_network_online import train_online
 
 class ModelImageProcessor:
-    def __init__(self, user_id, order_id, sex_code, age, style_code):
+    def __init__(self, logger, user_id, order_id, sex_code, age, style_code):
         '''
         例子 
         user_id = 'O12023061322330073900001'
@@ -17,21 +17,22 @@ class ModelImageProcessor:
         self.sex_code = sex_code
         self.age = age
         self.style_code = style_code
+        self.logger = logger
 
     def prepare_paths(self, num_repeat="30"):
         root_path = "./train_online"
+        self.image_recieve_path = os.path.join(root_path, self.order_id, "image_raw")
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
-        self.raw_input_path = os.path.join(self.model_input_path, "{}_raw".format(num_repeat))
-        self.raw_input_crop_path = os.path.join(self.model_input_path, "{}_crop".format(num_repeat))
+        self.image_crop_path = os.path.join(root_path, self.order_id, "image", "{}_crop".format(num_repeat))
         self.model_path = os.path.join(root_path, self.order_id, "model")
         self.log_path = os.path.join(root_path, self.order_id, "log")
         self.output_path = os.path.join(root_path, self.order_id, "output")
-        os.makedirs(self.model_input_path, exist_ok=True)
-        os.makedirs(self.raw_input_path, exist_ok=True)
+        os.makedirs(self.image_recieve_path, exist_ok=True)
+        os.makedirs(self.image_crop_path, exist_ok=True)
         os.makedirs(self.model_path, exist_ok=True)
         os.makedirs(self.log_path, exist_ok=True)
         os.makedirs(self.output_path, exist_ok=True)
-        return self.raw_input_path,self.raw_input_crop_path
+        return self.image_recieve_path, self.image_crop_path
 
     def generate_prompt(self):
         sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
@@ -50,10 +51,10 @@ class ModelImageProcessor:
             f.writelines(prompt_list)
         return valid_style_code_list
     
-    def process(self, logger):
+    def process(self):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
-            logger.info('order_id:{},没有风格用于生成'.format(self.order_id))
+            self.logger.info('order_id:{},没有风格用于生成'.format(self.order_id))
             return []
         # 训练模型
         try:
@@ -63,7 +64,7 @@ class ModelImageProcessor:
                                         self.log_path,
                                         self.output_path)
         except Exception as e:
-            logger.error('order_id:{},执行出错 {}'.format(self.order_id, e))
+            self.logger.error('order_id:{},执行出错 {}'.format(self.order_id, e))
             output_images = []
         # 整理图片结果
         num_style = len(valid_style_code_list)
@@ -108,7 +109,7 @@ def generate_info_prompt(sex_code, age):
     elif int(sex_code) == 100002:
         sex_str = female_obj_list[get_age_index(age, female_age_list)]
         sex2_str = 'female'
-    return sex_str, age_str, sex2_str
+    return sex_str, sex2_str, age_str
 
 
 def generate_prompt_dict(sex_str, sex2_str, age_str):
