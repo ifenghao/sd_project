@@ -11,7 +11,7 @@ infer_prompt_same_with_train=0
 
 
 # infer variable
-infer_lora_name=O12023063022124042200080-000002.safetensors
+infer_lora_name=ss_20230617205506-000002.safetensors
 
 # train config
 image_raw_path=./raw_images
