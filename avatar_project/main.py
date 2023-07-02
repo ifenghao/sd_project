@@ -16,6 +16,63 @@ server_code = '0' #temp_add, 机器号
 handle_oss_util = HandleOSSUtil(key_id=config["oss_config"]["key_id"], 
                                 key_secret=config["oss_config"]["key_secret"], 
                                 bucket=config["oss_config"]["bucket_name"]) 
+detector = dlib.get_frontal_face_detector() 
+
+def extract_face_and_shoulders(image_path, scale_x=2.8, scale_y=3):
+    try : 
+        image = cv2.imread(image_path) 
+        gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        faces = detector(gray)
+
+        if len(faces) != 1 : 
+            return None 
+        else : 
+            face = faces[0] 
+            x, y, w, h = face.left(), face.top(), face.width(), face.height()
+            padding_x = int(w * (scale_x - 1) / 2)
+            padding_y = int(h * (scale_y - 1) / 2)
+            # 扩展裁剪区域
+            x -= padding_x
+            y -= padding_y
+            w += 2 * padding_x
+            h += 2 * padding_y
+            x = max(0, x)
+            y = max(0, y)
+            w = min(w, image.shape[1] - x)
+            h = min(h, image.shape[0] - y)
+            # 裁剪出脸部和肩膀区域
+            cropped_face = image[y:y+h, x:x+w]
+            return cropped_face
+    except Exception as e:
+        logger.error(f"截取头像失败:{e},{image_path}")  
+        return None 
+
+def copy_image_to_folder(destination_folder, source_file):
+    try:        
+        shutil.copy2(source_file, destination_folder)
+    except Exception as e:
+        logger.error(f"Error copying file:{e}") 
+
+def save_cropped_image(cropped_image_path, cropped_image): 
+    try:
+        cv2.imwrite(cropped_image_path, cropped_image)
+    except Exception as e:
+        logger.error(f"Error saving cropped image: {e}")     
+
+def crop_face_from_path(local_input_path,local_input_crop_path) : 
+    crop_num = 0 
+    for root, dirs, files in os.walk(local_input_path):
+        for file_name in files: 
+            if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                image_path    = os.path.join(root, file_name) 
+                cropped_image = extract_face_and_shoulders(image_path, scale_x=2.8, scale_y=3)
+                if cropped_image is not None : 
+                    crop_num +=1 
+                    cropped_image_save_path = os.path.join(local_input_crop_path, file_name) 
+                    save_cropped_image(cropped_image_save_path,  cropped_image) 
+                else :
+                    copy_image_to_folder(local_input_crop_path,image_path)   
+    return crop_num
 
 def grab_order(): 
     ''':Description:抢单'''
@@ -84,7 +141,7 @@ if __name__ == '__main__':
             photos_info = get_order_photos(order_id)
             if photos_info and len(photos_info)>0 : 
                 processor = ModelImageProcessor(user_id, order_id, sex_code, age, style_code) 
-                local_input_path = processor.prepare_paths()
+                local_input_path, local_input_crop_path = processor.prepare_paths()
 
                 num_photo = 0 
                 for photo_info in photos_info : 
@@ -93,6 +150,10 @@ if __name__ == '__main__':
                     if downloadoss_result ==1:
                         num_photo+=1
                 logger.info('order_id:{},共下载{}张图片'.format(order_id,str(num_photo)))
+
+                #STEP 2.5: 对下载的图片进行截取
+                crop_num = crop_face_from_path(local_input_path,local_input_crop_path)
+                logger.info('order_id:{},共截取{}张图片'.format(order_id,str(crop_num)))
                     
                 #TODO1: STEP3 train model and predict
                 local_output_dict = processor.process(logger)
