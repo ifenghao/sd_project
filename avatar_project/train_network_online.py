@@ -396,12 +396,12 @@ def train(args):
 
     if args.debug_dataset:
         train_util.debug_dataset(train_dataset_group)
-        return
+        return []
     if len(train_dataset_group) == 0:
         print(
             "No data found. Please verify arguments (train_data_dir must be the parent of folders with images) / 画像がありません。引数指定を確認してください（train_data_dirには画像があるフォルダではなく、画像があるフォルダの親フォルダを指定する必要があります）"
         )
-        return
+        return []
 
     if cache_latents:
         assert (
@@ -476,7 +476,7 @@ def train(args):
             1.0, args.network_dim, args.network_alpha, vae, text_encoder, unet, neuron_dropout=args.network_dropout, **net_kwargs
         )
     if network is None:
-        return
+        return []
 
     if hasattr(network, "prepare_network"):
         network.prepare_network(args)
@@ -1151,9 +1151,10 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.text_encoder_lr=1e-5
     args.network_train_unet_only=True
     args.unet_lr=1e-4
-    args.lr_warmup_steps=200
     args.learning_rate=1e-5
-    args.lr_scheduler="constant_with_warmup"
+    args.lr_scheduler="constant_with_warmup" # "cosine_with_restarts"
+    args.lr_scheduler_num_cycles=10
+    args.lr_warmup_steps=300
     args.train_batch_size=1
     args.max_train_steps=1000  # ignored
     args.max_train_epochs=10
@@ -1166,12 +1167,12 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.enable_bucket=True
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
-    args.sample_sampler="euler_a"
+    args.sample_sampler="heun"
     args.sample_every_n_steps=100  # ignored
     args.sample_every_n_epochs=1
     args.sample_min_epochs=2
     args.cfg_scale=7
-    args.sample_steps=20
+    args.sample_steps=25
     args.max_token_length=225
     args.xformers=True
 
