@@ -15,10 +15,13 @@ class ModelPreprocessing:
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
                     image_path    = os.path.join(root, file_name) 
                     cropped_image = self.extract_face_and_shoulders(image_path, scale_x=2.8, scale_y=3)
+                    cropped_face_image = self.extract_face_and_shoulders(image_path, scale_x=1, scale_y=1) 
                     if cropped_image is not None : 
                         crop_num +=1 
                         cropped_image_save_path = os.path.join(crop_path, file_name) 
                         self.save_cropped_image(cropped_image_save_path,  cropped_image) 
+                        cropped_face_image_save_path = os.path.join(crop_path, 'face_'+file_name) 
+                        self.save_cropped_image(cropped_face_image_save_path,  cropped_face_image) 
                     else :
                         self.copy_image_to_folder(crop_path, image_path)   
         return crop_num
@@ -60,7 +63,7 @@ class ModelPreprocessing:
 
     def save_cropped_image(self, cropped_image_path, cropped_image): 
         try:
-            cv2.imwrite(cropped_image_path, cropped_image)
+            cv2.imwrite(cropped_image_path, cropped_image,[cv2.IMWRITE_JPEG_QUALITY, 100])
         except Exception as e:
             self.logger.error(f"Error saving cropped image: {e}")     
 
