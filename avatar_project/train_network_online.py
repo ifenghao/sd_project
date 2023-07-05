@@ -191,7 +191,7 @@ def sample_images(
                     sample_steps = args.sample_steps
                     width = height = 512
                     scale = args.cfg_scale
-                    seed = None
+                    seed = args.seed
                     for parg in prompt_args:
                         try:
                             m = re.match(r"w (\d+)", parg, re.IGNORECASE)
@@ -1128,17 +1128,33 @@ def setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def train_online(order_id, model_input_path, model_path, log_path, output_path):
+def train_online(lora_name, model_input_path, model_path, log_path, output_path, # 路径参数
+                base_model_path="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors", # 底模路径
+                # 训练参数
+                lr_scheduler="cosine_with_restarts",
+                lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
+                lr_warmup_steps=300, # 配合 constant_with_warmup
+                max_train_steps=None,
+                max_train_epochs=10,
+                save_every_n_epochs=2,
+                # 采样参数
+                sample_every_n_steps=None,
+                sample_every_n_epochs=1,
+                sample_sampler="euler_a",
+                cfg_scale=7,
+                sample_steps=30,
+                seed=47,
+            ):
     parser = setup_parser()
 
     args = parser.parse_args()
     args = train_util.read_config_from_file(args, parser)
 
     ### online args ###
-    args.pretrained_model_name_or_path="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors"
+    args.pretrained_model_name_or_path=base_model_path
     args.train_data_dir=model_input_path
     args.output_dir=model_path
-    args.output_name=order_id
+    args.output_name=lora_name
     args.logging_dir=log_path
     args.output_image_dir=output_path
     args.sample_prompts=os.path.join(output_path, "prompt.txt")
@@ -1150,15 +1166,10 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.network_args=["conv_dim=32"]
     args.text_encoder_lr=1e-5
     args.network_train_unet_only=True
+    args.weighted_captions=False
     args.unet_lr=1e-4
     args.learning_rate=1e-5
-    args.lr_scheduler="constant_with_warmup" # "cosine_with_restarts"
-    args.lr_scheduler_num_cycles=10
-    args.lr_warmup_steps=300
     args.train_batch_size=1
-    args.max_train_steps=1000  # ignored
-    args.max_train_epochs=10
-    args.save_every_n_epochs=2
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
@@ -1167,14 +1178,23 @@ def train_online(order_id, model_input_path, model_path, log_path, output_path):
     args.enable_bucket=True
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
-    args.sample_sampler="heun"
-    args.sample_every_n_steps=100  # ignored
-    args.sample_every_n_epochs=1
-    args.sample_min_epochs=2
-    args.cfg_scale=7
-    args.sample_steps=25
-    args.max_token_length=225
     args.xformers=True
+    args.sample_min_epochs=2
+    args.max_token_length=225
+    # 参与调整的参数
+    args.lr_scheduler=lr_scheduler
+    args.lr_scheduler_num_cycles=lr_scheduler_num_cycles
+    args.lr_warmup_steps=lr_warmup_steps
+    args.max_train_steps=max_train_steps
+    args.max_train_epochs=max_train_epochs
+    args.save_every_n_epochs=save_every_n_epochs
+    
+    args.sample_every_n_steps=sample_every_n_steps
+    args.sample_every_n_epochs=sample_every_n_epochs
+    args.sample_sampler=sample_sampler
+    args.cfg_scale=cfg_scale
+    args.sample_steps=sample_steps
+    args.seed=seed
 
     output_images_all = train(args)
     return output_images_all

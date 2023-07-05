@@ -150,4 +150,3 @@ class MysqlManager(object):
         return self.__query(sql, param)
 
 
-    conn.dispose()
