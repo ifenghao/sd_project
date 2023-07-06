@@ -84,7 +84,7 @@ class ModelImageProcessor:
         self.age = age
         self.style_code = style_code
 
-    def prepare_paths(self, raw_path, num_repeat="50"):
+    def prepare_paths(self, raw_path, num_repeat="10"):
         root_path = "./train"
         self.image_recieve_path = os.path.join(raw_path, self.order_id)
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
@@ -236,7 +236,7 @@ def concat_images(image_path_list, valid_prompt_num, result_path):
 def dict_to_image_name(params):
     name = ''
     for k, v in params.items():
-        name += str(k) + '=' + str(v) + '_'
+        name += str(k) + '=' + str(v) + ' '
     return name + '.jpg'
 
 
@@ -247,8 +247,8 @@ if __name__ == '__main__':
     train_image_sex_code_list = [100002, ]
     train_image_age_list = [30, ]
     params_dict_list = [
-        {'lr_scheduler': 'cosine_with_restarts', 'lr_scheduler_num_cycles': 10, 'seed': 47},
-        {'lr_scheduler': 'constant_with_warmup', 'lr_warmup_steps': 300, 'seed': 47},
+        {'unet_lr': 1e-5, 'seed': 47},
+        {'unet_lr': 1e-4, 'seed': 47},
     ]
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))

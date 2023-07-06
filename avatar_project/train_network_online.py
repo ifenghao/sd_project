@@ -1131,6 +1131,9 @@ def setup_parser() -> argparse.ArgumentParser:
 def train_online(lora_name, model_input_path, model_path, log_path, output_path, # 路径参数
                 base_model_path="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors", # 底模路径
                 # 训练参数
+                text_encoder_lr=1e-5,
+                unet_lr=1e-5,
+                learning_rate=1e-5,
                 lr_scheduler="cosine_with_restarts",
                 lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
                 lr_warmup_steps=300, # 配合 constant_with_warmup
@@ -1164,11 +1167,8 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.network_dim=32
     args.network_alpha=32
     args.network_args=["conv_dim=32"]
-    args.text_encoder_lr=1e-5
     args.network_train_unet_only=True
     args.weighted_captions=False
-    args.unet_lr=1e-4
-    args.learning_rate=1e-5
     args.train_batch_size=1
     args.mixed_precision="bf16"
     args.save_precision="bf16"
@@ -1182,6 +1182,9 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.sample_min_epochs=2
     args.max_token_length=225
     # 参与调整的参数
+    args.text_encoder_lr=text_encoder_lr
+    args.unet_lr=unet_lr
+    args.learning_rate=learning_rate
     args.lr_scheduler=lr_scheduler
     args.lr_scheduler_num_cycles=lr_scheduler_num_cycles
     args.lr_warmup_steps=lr_warmup_steps
