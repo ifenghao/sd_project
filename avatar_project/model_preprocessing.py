@@ -55,6 +55,13 @@ class ModelPreprocessing:
             self.logger.error(f"截取头像失败:{e},{image_path}")  
             return None 
 
+    def copy_image_from_path(self, input_path, copy_path):
+        for root, dirs, files in os.walk(input_path):
+            for file_name in files: 
+                if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    image_path    = os.path.join(root, file_name)
+                    self.copy_image_to_folder(copy_path, image_path)
+    
     def copy_image_to_folder(self, destination_folder, source_file):
         try:        
             shutil.copy2(source_file, destination_folder)

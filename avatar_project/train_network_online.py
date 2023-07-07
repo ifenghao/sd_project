@@ -469,11 +469,11 @@ def train(args):
 
     # if a new network is added in future, add if ~ then blocks for each network (;'∀')
     if args.dim_from_weights:
-        network, _ = network_module.create_network_from_weights(1, args.network_weights, vae, text_encoder, unet, **net_kwargs)
+        network, _ = network_module.create_network_from_weights(args.network_mul, args.network_weights, vae, text_encoder, unet, **net_kwargs)
     else:
         # LyCORIS will work with this...
         network = network_module.create_network(
-            1.0, args.network_dim, args.network_alpha, vae, text_encoder, unet, neuron_dropout=args.network_dropout, **net_kwargs
+            args.network_mul, args.network_dim, args.network_alpha, vae, text_encoder, unet, neuron_dropout=args.network_dropout, **net_kwargs
         )
     if network is None:
         return []
@@ -1131,6 +1131,7 @@ def setup_parser() -> argparse.ArgumentParser:
 def train_online(lora_name, model_input_path, model_path, log_path, output_path, # 路径参数
                 base_model_path="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors", # 底模路径
                 # 训练参数
+                network_mul=1.0, # lora应用权重0~1
                 text_encoder_lr=1e-5,
                 unet_lr=1e-5,
                 learning_rate=1e-5,
@@ -1182,6 +1183,7 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.sample_min_epochs=2
     args.max_token_length=225
     # 参与调整的参数
+    args.network_mul=network_mul
     args.text_encoder_lr=text_encoder_lr
     args.unet_lr=unet_lr
     args.learning_rate=learning_rate

@@ -17,10 +17,13 @@ class ModelPreprocessing:
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
                     image_path    = os.path.join(root, file_name) 
                     cropped_image = self.extract_face_and_shoulders(image_path, scale_x=2.8, scale_y=3)
+                    cropped_face_image = self.extract_face_and_shoulders(image_path, scale_x=1, scale_y=1) 
                     if cropped_image is not None : 
                         crop_num +=1 
                         cropped_image_save_path = os.path.join(crop_path, file_name) 
                         self.save_cropped_image(cropped_image_save_path,  cropped_image) 
+                        cropped_face_image_save_path = os.path.join(crop_path, 'face_'+file_name) 
+                        self.save_cropped_image(cropped_face_image_save_path,  cropped_face_image) 
                     else :
                         self.copy_image_to_folder(crop_path, image_path)   
         return crop_num
@@ -53,6 +56,13 @@ class ModelPreprocessing:
         except Exception as e:
             print(f"截取头像失败:{e},{image_path}")  
             return None 
+    
+    def copy_image_from_path(self, input_path, copy_path):
+        for root, dirs, files in os.walk(input_path):
+            for file_name in files: 
+                if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    image_path    = os.path.join(root, file_name)
+                    self.copy_image_to_folder(copy_path, image_path)
 
     def copy_image_to_folder(self, destination_folder, source_file):
         try:        
@@ -62,10 +72,9 @@ class ModelPreprocessing:
 
     def save_cropped_image(self, cropped_image_path, cropped_image): 
         try:
-            cv2.imwrite(cropped_image_path, cropped_image)
+            cv2.imwrite(cropped_image_path, cropped_image,[cv2.IMWRITE_JPEG_QUALITY, 100])
         except Exception as e:
-            print(f"Error saving cropped image: {e}")     
-
+            print(f"Error saving cropped image: {e}")
 
 
 class ModelImageProcessor:
@@ -84,7 +93,7 @@ class ModelImageProcessor:
         self.age = age
         self.style_code = style_code
 
-    def prepare_paths(self, raw_path, num_repeat="10"):
+    def prepare_paths(self, raw_path, num_repeat="50"):
         root_path = "./train"
         self.image_recieve_path = os.path.join(raw_path, self.order_id)
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
@@ -95,14 +104,7 @@ class ModelImageProcessor:
         os.makedirs(self.image_crop_path, exist_ok=True)
         os.makedirs(self.model_path, exist_ok=True)
         os.makedirs(self.log_path, exist_ok=True)
-        os.makedirs(self.output_path, exist_ok=True)
-
-        for root, dirs, files in os.walk(self.image_recieve_path):
-            for file_name in files: 
-                if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    image_path    = os.path.join(root, file_name) 
-                    print(image_path)
-                    shutil.copy2(image_path, self.image_crop_path)                    
+        os.makedirs(self.output_path, exist_ok=True)                 
         return self.image_recieve_path, self.image_crop_path
 
     def generate_prompt(self):
@@ -243,12 +245,12 @@ def dict_to_image_name(params):
 if __name__ == '__main__':
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj', ]
+    train_image_name_list = ['zkj4', ]
     train_image_sex_code_list = [100002, ]
     train_image_age_list = [30, ]
     params_dict_list = [
+        {'unet_lr': 2e-5, 'seed': 47},
         {'unet_lr': 1e-5, 'seed': 47},
-        {'unet_lr': 1e-4, 'seed': 47},
     ]
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
@@ -259,10 +261,10 @@ if __name__ == '__main__':
                                                 order_id=name, 
                                                 sex_code=sex_code, 
                                                 age=age, 
-                                                style_code='200001,200002,200004,200003,200006,200005,200007,200008')
+                                                style_code='200001,200002,200004,200003,200006,200005,200007')
             image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path)
             preprocessor = ModelPreprocessing()
-            # crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
-            crop_num = preprocessor.copy_image_to_folder(image_crop_path, image_recieve_path)
+            crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
+            # crop_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             valid_prompt_num, output_images = model_processor.process(params)
             concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)))
