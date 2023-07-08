@@ -16,8 +16,8 @@ class ModelPreprocessing:
             for file_name in files: 
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
                     image_path    = os.path.join(root, file_name) 
-                    cropped_image = self.extract_face_and_shoulders(image_path, scale_x=2.8, scale_y=3)
-                    cropped_face_image = self.extract_face_and_shoulders(image_path, scale_x=1, scale_y=1) 
+                    cropped_image = self.extract_square_face_and_shoulders(image_path, scale=4)
+                    cropped_face_image = self.extract_square_face_and_shoulders(image_path, scale=1.2) 
                     if cropped_image is not None : 
                         crop_num +=1 
                         cropped_image_save_path = os.path.join(crop_path, file_name) 
@@ -52,6 +52,44 @@ class ModelPreprocessing:
                 h = min(h, image.shape[0] - y)
                 # 裁剪出脸部和肩膀区域
                 cropped_face = image[y:y+h, x:x+w]
+                return cropped_face
+        except Exception as e:
+            print(f"截取头像失败:{e},{image_path}")  
+            return None 
+        
+    def extract_square_face_and_shoulders(self, image_path, scale=3):
+        try : 
+            image = cv2.imread(image_path) 
+            gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            faces = self.detector(gray)
+
+            if len(faces) != 1 : 
+                return None 
+            else : 
+                face = faces[0] 
+                left, top, w, h = face.left(), face.top(), face.width(), face.height()
+                side = max(w, h)
+                # 扩展裁剪区域
+                padding = int(side * (scale - 1) / 2)
+                left_bound = left - padding
+                top_bound = top - padding
+                right_bound = left + side + padding
+                bottom_bound = top + side + padding
+                max_diff = 0
+                if left_bound < 0:
+                    max_diff = max(max_diff, -left_bound)
+                if top_bound < 0:
+                    max_diff = max(max_diff, -top_bound)
+                if right_bound > image.shape[1] - 1:
+                    max_diff = max(max_diff, right_bound - image.shape[1] + 1)
+                if bottom_bound > image.shape[0] - 1:
+                    max_diff = max(max_diff, bottom_bound - image.shape[0] + 1)
+                left_bound += max_diff
+                top_bound += max_diff
+                right_bound -= max_diff
+                bottom_bound -= max_diff
+                # 裁剪出脸部和肩膀区域
+                cropped_face = image[top_bound:bottom_bound, left_bound:right_bound]
                 return cropped_face
         except Exception as e:
             print(f"截取头像失败:{e},{image_path}")  
@@ -120,8 +158,8 @@ class ModelImageProcessor:
                 valid_style_code_list.append(style_code)
         if len(valid_style_code_list) == 0:
             return []
-        with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
-            f.writelines(prompt_list)
+        # with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
+        #     f.writelines(prompt_list)
         return valid_style_code_list
     
     def process(self, params={}):
@@ -203,14 +241,14 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
             'pos': "masterpiece, best quality,realistic,(realskin:1.5),1{sex},school,longhair,no_bangs, side_view,looking at viewer,school uniform,realskin softlight, {age}".format(sex=sex_str, age=age_str),
             'neg': "paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans, extra fingers, fewer fingers, ((watermark:2)), (white letters:1), (multi nipples), bad anatomy, bad hands, text, error, missing fingers, missing arms, missing legs, extra digit, fewer digits, cropped, worst quality, jpeg artifacts, signature, watermark, username, bad feet, Multiple people, blurry, poorly drawn hands, poorly drawn face, mutation, deformed, extra limbs, extra arms, extra legs, malformed limbs, fused fingers, too many fingers, long neck, cross-eyed, mutated hands, polar lowres, bad body, bad proportions, gross proportions, wrong feet bottom render, abdominal stretch, briefs, knickers, kecks, thong, fused fingers, bad body,bad proportion body to legs, wrong toes, extra toes, missing toes, weird toes, 2 body, 2 pussy, 2 upper, 2 lower, 2 head, 3 hand, 3 feet, extra long leg, super long leg, mirrored image, mirrored noise,, badhandv4, ng_deepnegative_v1_75t"
         },
-        '200007': {
-            'pos': "((master piece)),best quality, illustration, dark, 1{sex}, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
-            'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot"
-        },
-        '200008': {
-            'pos': "(masterpiece, best quality:1.2), from side, solo, {sex2} focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, sex2=sex2_str, age=age_str),
-            'neg': ""
-        },
+        # '200007': {
+        #     'pos': "((master piece)),best quality, illustration, dark, 1{sex}, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+        #     'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot"
+        # },
+        # '200008': {
+        #     'pos': "(masterpiece, best quality:1.2), from side, solo, {sex2} focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, sex2=sex2_str, age=age_str),
+        #     'neg': ""
+        # },
     }
     return prompt_dict
 
@@ -238,7 +276,10 @@ def concat_images(image_path_list, valid_prompt_num, result_path):
 def dict_to_image_name(params):
     name = ''
     for k, v in params.items():
-        name += str(k) + '=' + str(v) + ' '
+        v = str(v)
+        if '/' in v:
+            v = v.split('/')[-1]
+        name += str(k) + '=' + v + ' '
     return name + '.jpg'
 
 
@@ -249,8 +290,9 @@ if __name__ == '__main__':
     train_image_sex_code_list = [100002, ]
     train_image_age_list = [30, ]
     params_dict_list = [
-        {'unet_lr': 2e-5, 'seed': 47},
-        {'unet_lr': 1e-5, 'seed': 47},
+        {'base_model_path': './models/stable-diffusion/chilloutmix_NiPrunedFp32Fix.safetensors', 'text_encoder_lr': 2e-5,
+                'unet_lr':2e-5, 'learning_rate':2e-5, 'seed': 47},
+        # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))

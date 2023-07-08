@@ -1135,12 +1135,12 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 text_encoder_lr=1e-5,
                 unet_lr=1e-5,
                 learning_rate=1e-5,
-                lr_scheduler="cosine_with_restarts",
+                lr_scheduler="constant_with_warmup",
                 lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
-                lr_warmup_steps=300, # 配合 constant_with_warmup
-                max_train_steps=None,
+                lr_warmup_steps=400, # 配合 constant_with_warmup
+                max_train_steps=4000,
                 max_train_epochs=10,
-                save_every_n_epochs=2,
+                save_every_n_epochs=1,
                 # 采样参数
                 sample_every_n_steps=None,
                 sample_every_n_epochs=1,
@@ -1167,20 +1167,20 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.resolution="512,512"
     args.network_dim=32
     args.network_alpha=32
-    args.network_args=["conv_dim=32"]
-    args.network_train_unet_only=True
-    args.weighted_captions=False
+    # args.network_args=["conv_dim=32"]
+    # args.network_train_unet_only=True
+    args.weighted_captions=True
     args.train_batch_size=1
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
     args.optimizer_type="AdamW8bit"
-    args.max_data_loader_n_workers=16
+    args.max_data_loader_n_workers=0
     args.enable_bucket=True
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
     args.xformers=True
-    args.sample_min_epochs=2
+    args.sample_min_epochs=1
     args.max_token_length=225
     # 参与调整的参数
     args.network_mul=network_mul

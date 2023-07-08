@@ -4,8 +4,6 @@ conda activate sd
 export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH
 export HF_HOME="~/huggingface"
 
-source ./config.sh
-
 date_str=`date +'%Y%m%d%H%M%S'`
 
 python main_local.py
