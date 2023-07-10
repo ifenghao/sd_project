@@ -11,7 +11,7 @@ infer_prompt_same_with_train=0
 
 
 # infer variable
-infer_lora_name=zkj4-000004.safetensors
+infer_lora_name=zkj4.safetensors
 
 # train config
 image_raw_path=./raw_images

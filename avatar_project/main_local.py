@@ -5,27 +5,28 @@ import dlib
 import cv2
 from PIL import Image
 from train_network_online import train_online
+from tag_images_by_wd14_tagger_online import tag_images
+from gen_img_diffusers_online import gen_img
 
 class ModelPreprocessing:
     def __init__(self):
         self.detector = dlib.get_frontal_face_detector()
 
-    def crop_face_from_path(self, input_path, crop_path) : 
+    def crop_face_from_path(self, input_path, crop_path, scales=[0.8, 1.2, 1.8, 2.8]) : 
         crop_num = 0 
         for root, dirs, files in os.walk(input_path):
             for file_name in files: 
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    image_path    = os.path.join(root, file_name) 
-                    cropped_image = self.extract_square_face_and_shoulders(image_path, scale=4)
-                    cropped_face_image = self.extract_square_face_and_shoulders(image_path, scale=1.2) 
-                    if cropped_image is not None : 
-                        crop_num +=1 
-                        cropped_image_save_path = os.path.join(crop_path, file_name) 
-                        self.save_cropped_image(cropped_image_save_path,  cropped_image) 
-                        cropped_face_image_save_path = os.path.join(crop_path, 'face_'+file_name) 
-                        self.save_cropped_image(cropped_face_image_save_path,  cropped_face_image) 
-                    else :
-                        self.copy_image_to_folder(crop_path, image_path)   
+                    image_path    = os.path.join(root, file_name)
+                    for scale in scales:
+                        cropped_image = self.extract_square_face_and_shoulders(image_path, scale=scale) 
+                        scale_crop_path = crop_path + str(scale)
+                        if cropped_image is not None : 
+                            crop_num +=1
+                            os.makedirs(scale_crop_path, exist_ok=True) 
+                            self.save_cropped_image(os.path.join(scale_crop_path, file_name),  cropped_image) 
+                        else :
+                            self.copy_image_to_folder(scale_crop_path, image_path)   
         return crop_num
 
     def extract_face_and_shoulders(self, image_path, scale_x=2.8, scale_y=3):
@@ -96,11 +97,14 @@ class ModelPreprocessing:
             return None 
     
     def copy_image_from_path(self, input_path, copy_path):
+        copy_num = 0
         for root, dirs, files in os.walk(input_path):
             for file_name in files: 
                 if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    copy_num += 1
                     image_path    = os.path.join(root, file_name)
                     self.copy_image_to_folder(copy_path, image_path)
+        return copy_num
 
     def copy_image_to_folder(self, destination_folder, source_file):
         try:        
@@ -144,6 +148,18 @@ class ModelImageProcessor:
         os.makedirs(self.log_path, exist_ok=True)
         os.makedirs(self.output_path, exist_ok=True)                 
         return self.image_recieve_path, self.image_crop_path
+    
+    def generate_tags(self, batch_size=1,
+                    max_data_loader_n_workers=16,
+                    general_threshold=0.35,
+                    character_threshold=0.5):
+        tag_images(train_data_dir=self.model_input_path,
+                   model_dir='./models/wd14_tagger_model',
+                   class_tag=self.order_id,
+                   batch_size=batch_size,
+                   max_data_loader_n_workers=max_data_loader_n_workers,
+                   general_threshold=general_threshold,
+                   character_threshold=character_threshold)
 
     def generate_prompt(self):
         sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
@@ -158,27 +174,56 @@ class ModelImageProcessor:
                 valid_style_code_list.append(style_code)
         if len(valid_style_code_list) == 0:
             return []
-        # with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
-        #     f.writelines(prompt_list)
+        with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
+            f.writelines(prompt_list)
         return valid_style_code_list
     
-    def process(self, params={}):
+    def train(self, gen_sample_image=True, params={}):
+        if not gen_sample_image:
+            params['sample_every_n_steps'] = None
+            params['sample_every_n_epochs'] = None
+        # 训练模型
+        try:
+            output_sample_images = train_online(
+                self.order_id, 
+                self.model_input_path,
+                self.model_path,
+                self.log_path,
+                self.output_path,
+                **params)
+        except Exception as e:
+            print('order_id:{},训练出错 {}'.format(self.order_id, e))
+            output_sample_images = []
+        return output_sample_images
+    
+    def gen_img(self, use_step=-1, params={}):
+        model_file_list = os.listdir(self.model_path)
+        model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
+        total_steps = len(model_file_list)
+        if total_steps == 0 or use_step >= total_steps:
+            print('No lora model is loaded')
+            return []
+        model_file = model_file_list[use_step]
+        print('select model file: ' + model_file)
+        # 生成图片
+        try:
+            output_gen_images = gen_img(outdir=self.output_path, 
+                                        network_weights=os.path.join(self.model_path, model_file), 
+                                        from_file=os.path.join(self.output_path, 'prompt.txt'),
+                                        **params)
+        except Exception as e:
+            print('order_id:{},生成出错 {}'.format(self.order_id, e))
+            output_gen_images = []
+        return output_gen_images
+    
+    def process(self, gen_sample_image=True, use_step=-1, train_params={}, gen_params={}):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
             print('order_id:{},没有风格用于生成'.format(self.order_id))
             return []
-        # 训练模型
-        try:
-            output_images = train_online(self.order_id, 
-                                        self.model_input_path,
-                                        self.model_path,
-                                        self.log_path,
-                                        self.output_path,
-                                        **params)
-        except Exception as e:
-            print('order_id:{},执行出错 {}'.format(self.order_id, e))
-            output_images = []
-        return len(valid_style_code_list), output_images
+        output_sample_images = self.train(gen_sample_image, params=train_params)
+        output_gen_images = self.gen_img(use_step, params=gen_params)
+        return len(valid_style_code_list), output_gen_images
 
     def process_test(self) :
         '''流程测试用'''
@@ -219,32 +264,32 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
     prompt_dict = {
         '200001': {
             'pos': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
-            'neg': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative"
+            'neg': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
         },
         '200002': {
-            'pos': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), ghibli style, san \(mononoke hime\), 1{sex}, armlet, bangs, black hair, black undershirt, breasts, cape, circlet, earrings, facepaint, floating hair, forest, fur cape, green eyes, jewelry, looking at viewer, medium breasts, nature, necklace, outdoors, parted bangs, shirt, short hair, sleeveless, sleeveless shirt, solo, tooth necklace, tree, upper body, white shirt, {age}".format(sex=sex_str, age=age_str),
-            'neg': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative"
+            'pos': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, {age}".format(sex=sex_str, age=age_str),
+            'neg': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
         },
         '200003': {
             'pos': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{sex}, {age}".format(sex=sex_str, age=age_str),
-            'neg': ""
+            'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
         },
         '200004': {
-            'pos': "{sex} holding cat, cat ears, chibi, blue, gold, white, purpple, dragon scaly armor, forest background, fantasy style, (dark shot:1.17), epic realistic, faded, ((neutral colors)), art, (hdr:1.5), (muted colors:1.2), hyperdetailed, (artstation:1.5), cinematic, warm lights, dramatic light, (intricate details:1.1), complex background, (rutkowski:0.8), (teal and orange:0.4), colorfull, (natural skin texture, hyperrealism, soft light, sharp:1.2), (intricate details:1.12), hdr, (intricate details, hyperdetailed:1.15), white hair, {age}".format(sex=sex_str, age=age_str),
-            'neg': ""
+            'pos': "((master piece)),best quality, illustration, 1{sex}, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
         },
         '200005': {
             'pos': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{sex}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {age}".format(sex=sex_str, age=age_str),
-            'neg': "easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass"
+            'neg': "easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
         },
         '200006': {
-            'pos': "masterpiece, best quality,realistic,(realskin:1.5),1{sex},school,longhair,no_bangs, side_view,looking at viewer,school uniform,realskin softlight, {age}".format(sex=sex_str, age=age_str),
-            'neg': "paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans, extra fingers, fewer fingers, ((watermark:2)), (white letters:1), (multi nipples), bad anatomy, bad hands, text, error, missing fingers, missing arms, missing legs, extra digit, fewer digits, cropped, worst quality, jpeg artifacts, signature, watermark, username, bad feet, Multiple people, blurry, poorly drawn hands, poorly drawn face, mutation, deformed, extra limbs, extra arms, extra legs, malformed limbs, fused fingers, too many fingers, long neck, cross-eyed, mutated hands, polar lowres, bad body, bad proportions, gross proportions, wrong feet bottom render, abdominal stretch, briefs, knickers, kecks, thong, fused fingers, bad body,bad proportion body to legs, wrong toes, extra toes, missing toes, weird toes, 2 body, 2 pussy, 2 upper, 2 lower, 2 head, 3 hand, 3 feet, extra long leg, super long leg, mirrored image, mirrored noise,, badhandv4, ng_deepnegative_v1_75t"
+            'pos': "1{sex}, hand_gesture, white_hair, multicolored hair, long hair, very long hair, multicolored eyes, (multicolored_background:1.8), solo, smile, looking at viewer, cherry blossoms, grin, hair between eyes, dress, dress, dress_shirt, white_dress, multicolored_dress, bangs, upper body, album cover, {age}".format(sex=sex_str, age=age_str),
+            'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
         },
-        # '200007': {
-        #     'pos': "((master piece)),best quality, illustration, dark, 1{sex}, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
-        #     'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot"
-        # },
+        '200007': {
+            'pos': "((master piece)),best quality, illustration, dark, 1{sex}, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
+        },
         # '200008': {
         #     'pos': "(masterpiece, best quality:1.2), from side, solo, {sex2} focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, sex2=sex2_str, age=age_str),
         #     'neg': ""
@@ -253,7 +298,7 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
     return prompt_dict
 
 
-def concat_images(image_path_list, valid_prompt_num, result_path):
+def concat_images(image_path_list, valid_prompt_num, result_path, by_row=True):
     image_num = len(image_path_list)
     ROW = valid_prompt_num
     COL = image_num // ROW
@@ -264,12 +309,20 @@ def concat_images(image_path_list, valid_prompt_num, result_path):
         image_files.append(Image.open(image_path_list[index])) #读取所有用于拼接的图片
     target = Image.new('RGB', (UNIT_WIDTH_SIZE * COL, UNIT_HEIGHT_SIZE * ROW)) #创建成品图的画布
     #第一个参数RGB表示创建RGB彩色图，第二个参数传入元组指定图片大小，第三个参数可指定颜色，默认为黑色
-    for col in range(COL):
+    if by_row:
         for row in range(ROW):
-            #对图片进行逐行拼接
-            #paste方法第一个参数指定需要拼接的图片，第二个参数为二元元组（指定复制位置的左上角坐标）
-            #或四元元组（指定复制位置的左上角和右下角坐标）
-            target.paste(image_files[ROW*col + row], (0 + UNIT_WIDTH_SIZE*col, 0 + UNIT_HEIGHT_SIZE*row))
+            for col in range(COL):            
+                #对图片进行逐行拼接
+                #paste方法第一个参数指定需要拼接的图片，第二个参数为二元元组（指定复制位置的左上角坐标）
+                #或四元元组（指定复制位置的左上角和右下角坐标）
+                target.paste(image_files[COL*row + col], (0 + UNIT_WIDTH_SIZE*col, 0 + UNIT_HEIGHT_SIZE*row))
+    else:
+        for col in range(COL):
+            for row in range(ROW):
+                #对图片进行逐行拼接
+                #paste方法第一个参数指定需要拼接的图片，第二个参数为二元元组（指定复制位置的左上角坐标）
+                #或四元元组（指定复制位置的左上角和右下角坐标）
+                target.paste(image_files[ROW*col + row], (0 + UNIT_WIDTH_SIZE*col, 0 + UNIT_HEIGHT_SIZE*row))
     target.save(result_path, quality=40) #成品图保存
 
 
@@ -290,10 +343,10 @@ if __name__ == '__main__':
     train_image_sex_code_list = [100002, ]
     train_image_age_list = [30, ]
     params_dict_list = [
-        {'base_model_path': './models/stable-diffusion/chilloutmix_NiPrunedFp32Fix.safetensors', 'text_encoder_lr': 2e-5,
-                'unet_lr':2e-5, 'learning_rate':2e-5, 'seed': 47},
+        {'text_encoder_lr': 1e-5, 'unet_lr':1e-5, 'learning_rate':1e-5, 'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
+    gen_params_dict = {'images_per_prompt': 4, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
     print(name_list)
@@ -304,9 +357,10 @@ if __name__ == '__main__':
                                                 sex_code=sex_code, 
                                                 age=age, 
                                                 style_code='200001,200002,200004,200003,200006,200005,200007')
-            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path)
+            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="10")
             preprocessor = ModelPreprocessing()
+            copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
-            # crop_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
-            valid_prompt_num, output_images = model_processor.process(params)
-            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)))
+            # model_processor.generate_tags()
+            valid_prompt_num, output_images = model_processor.process(gen_sample_image=False, train_params=params, gen_params=gen_params_dict)
+            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), by_row=True)

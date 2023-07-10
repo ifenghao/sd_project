@@ -1042,7 +1042,7 @@ def train(args):
         save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
 
         print("model saved.")
-    return output_images_all
+    return output_images_all, text_encoder, vae, unet
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -1144,9 +1144,9 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 # 采样参数
                 sample_every_n_steps=None,
                 sample_every_n_epochs=1,
-                sample_sampler="euler_a",
+                sample_sampler="heun",
                 cfg_scale=7,
-                sample_steps=30,
+                sample_steps=25,
                 seed=47,
             ):
     parser = setup_parser()
@@ -1167,15 +1167,15 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.resolution="512,512"
     args.network_dim=32
     args.network_alpha=32
-    # args.network_args=["conv_dim=32"]
+    args.network_args=["conv_dim=32"]
     # args.network_train_unet_only=True
     args.weighted_captions=True
     args.train_batch_size=1
     args.mixed_precision="bf16"
     args.save_precision="bf16"
     args.cache_latents=True
-    args.optimizer_type="AdamW8bit"
-    args.max_data_loader_n_workers=0
+    args.optimizer_type="AdamW"
+    args.max_data_loader_n_workers=16
     args.enable_bucket=True
     args.bucket_reso_steps=64
     args.bucket_no_upscale=True
@@ -1201,8 +1201,8 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.sample_steps=sample_steps
     args.seed=seed
 
-    output_images_all = train(args)
-    return output_images_all
+    output_sample_images = train(args)
+    return output_sample_images
 
 
 if __name__ == "__main__":
