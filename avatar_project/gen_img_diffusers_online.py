@@ -3623,10 +3623,10 @@ def setup_parser() -> argparse.ArgumentParser:
 
 def gen_img(outdir, network_weights, from_file,
             ckpt="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors",
-            images_per_prompt=1,
+            images_per_prompt=6,
             network_mul=1,
-            steps=30,
-            sampler='euler_a',
+            steps=25,
+            sampler='heun',
             seed=None
             ):
     parser = setup_parser()

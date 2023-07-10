@@ -20,7 +20,7 @@ class ModelImageProcessor:
         self.style_code = style_code
         self.logger = logger
 
-    def prepare_paths(self, num_repeat="20"):
+    def prepare_paths(self, num_repeat="30"):
         root_path = "./train_online"
         self.image_recieve_path = os.path.join(root_path, self.order_id, "image_raw")
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
