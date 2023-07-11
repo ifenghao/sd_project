@@ -6,7 +6,7 @@ export HF_HOME="~/huggingface"
 
 date_str=`date +'%Y%m%d%H%M%S'`
 
-python main_local.py
+python main_local.py --test_mode run_train
 
 # accelerate launch --num_cpu_threads_per_process=4 train_network_online.py \
 #     --pretrained_model_name_or_path=${checkpoint_file} \

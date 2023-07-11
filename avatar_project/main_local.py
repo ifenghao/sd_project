@@ -12,7 +12,7 @@ class ModelPreprocessing:
     def __init__(self):
         self.detector = dlib.get_frontal_face_detector()
 
-    def crop_face_from_path(self, input_path, crop_path, scales=[0.8, 1.2, 1.8, 2.8]) : 
+    def crop_face_from_path(self, input_path, crop_path, scales=[0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8]) : 
         crop_num = 0 
         for root, dirs, files in os.walk(input_path):
             for file_name in files: 
@@ -216,12 +216,13 @@ class ModelImageProcessor:
             output_gen_images = []
         return output_gen_images
     
-    def process(self, gen_sample_image=True, use_step=-1, train_params={}, gen_params={}):
+    def process(self, run_train=True, gen_sample_image=True, use_step=-1, train_params={}, gen_params={}):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
             print('order_id:{},没有风格用于生成'.format(self.order_id))
             return []
-        output_sample_images = self.train(gen_sample_image, params=train_params)
+        if run_train:
+            output_sample_images = self.train(gen_sample_image, params=train_params)
         output_gen_images = self.gen_img(use_step, params=gen_params)
         return len(valid_style_code_list), output_gen_images
 
@@ -300,6 +301,9 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
 
 def concat_images(image_path_list, valid_prompt_num, result_path, by_row=True):
     image_num = len(image_path_list)
+    if image_num == 0:
+        print('No image generated')
+        return
     ROW = valid_prompt_num
     COL = image_num // ROW
     UNIT_WIDTH_SIZE = 512
@@ -337,16 +341,20 @@ def dict_to_image_name(params):
 
 
 if __name__ == '__main__':
+    arg = sys.argv[2]
+    run_train = True if arg == 'run_train' else False
+    print('本次执行选项:', arg)
+
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj4', ]
+    train_image_name_list = ['test1', ]
     train_image_sex_code_list = [100002, ]
     train_image_age_list = [30, ]
     params_dict_list = [
         {'text_encoder_lr': 1e-5, 'unet_lr':1e-5, 'learning_rate':1e-5, 'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
-    gen_params_dict = {'images_per_prompt': 4, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
+    gen_params_dict = {'images_per_prompt': 1, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
     print(name_list)
@@ -357,10 +365,10 @@ if __name__ == '__main__':
                                                 sex_code=sex_code, 
                                                 age=age, 
                                                 style_code='200001,200002,200004,200003,200006,200005,200007')
-            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="10")
+            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="20")
             preprocessor = ModelPreprocessing()
             copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
-            valid_prompt_num, output_images = model_processor.process(gen_sample_image=False, train_params=params, gen_params=gen_params_dict)
+            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, train_params=params, gen_params=gen_params_dict)
             concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), by_row=True)

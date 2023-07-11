@@ -15,6 +15,7 @@ outputs/*
 models/*
 !models/put all models here.txt
 !models/stable-diffusion/put ckpt model here.txt
+!models/embeddings
 
 train_online/*
 !train/new lora will be create.txt

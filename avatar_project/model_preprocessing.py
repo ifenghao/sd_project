@@ -8,7 +8,7 @@ class ModelPreprocessing:
         self.logger = logger
         self.detector = dlib.get_frontal_face_detector()
 
-    def crop_face_from_path(self, input_path, crop_path, scales=[0.8, 1.2, 1.8, 2.8]) : 
+    def crop_face_from_path(self, input_path, crop_path, scales=[0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8]) : 
         crop_num = 0 
         for root, dirs, files in os.walk(input_path):
             for file_name in files: 

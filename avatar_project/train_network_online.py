@@ -1125,6 +1125,7 @@ def setup_parser() -> argparse.ArgumentParser:
         default=0,
         help="sample wait for minimun epochs",
     )
+    parser.add_argument("--test_mode", type=str, default=None, help="for test")
     return parser
 
 
@@ -1138,12 +1139,13 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 lr_scheduler="constant_with_warmup",
                 lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
                 lr_warmup_steps=400, # 配合 constant_with_warmup
-                max_train_steps=4000,
-                max_train_epochs=10,
-                save_every_n_epochs=1,
+                max_train_steps=2000,
+                max_train_epochs=None,
+                save_every_n_steps=400,
+                save_every_n_epochs=None,
                 # 采样参数
-                sample_every_n_steps=None,
-                sample_every_n_epochs=1,
+                sample_every_n_steps=400,
+                sample_every_n_epochs=None,
                 sample_sampler="heun",
                 cfg_scale=7,
                 sample_steps=25,
@@ -1192,6 +1194,7 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.lr_warmup_steps=lr_warmup_steps
     args.max_train_steps=max_train_steps
     args.max_train_epochs=max_train_epochs
+    args.save_every_n_steps=save_every_n_steps
     args.save_every_n_epochs=save_every_n_epochs
     
     args.sample_every_n_steps=sample_every_n_steps

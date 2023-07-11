@@ -3614,6 +3614,7 @@ def setup_parser() -> argparse.ArgumentParser:
         nargs="*",
         help="ControlNet guidance ratio for steps / ControlNetでガイドするステップ比率",
     )
+    parser.add_argument("--test_mode", type=str, default=None, help="for test")
     # parser.add_argument(
     #     "--control_net_image_path", type=str, default=None, nargs="*", help="image for ControlNet guidance / ControlNetでガイドに使う画像"
     # )
@@ -3629,6 +3630,7 @@ def gen_img(outdir, network_weights, from_file,
             sampler='heun',
             seed=None
             ):
+    embed_path = './models/embeddings/'
     parser = setup_parser()
     args = parser.parse_args()
     args.outdir = outdir
@@ -3641,7 +3643,7 @@ def gen_img(outdir, network_weights, from_file,
     args.network_weights = [network_weights]
     args.network_mul = [network_mul]
     args.network_module = ['networks.lora']
-    args.textual_inversion_embeddings = ['./models/embeddings/EasyNegative.safetensors', './models/embeddings/ng_deepnegative_v1_75t.pt', './models/embeddings/badhandv4.pt']
+    args.textual_inversion_embeddings = [embed_path + 'EasyNegative.safetensors', embed_path + 'ng_deepnegative_v1_75t.pt', embed_path + 'badhandv4.pt']
     args.max_embeddings_multiples = 5
     args.xformers = True
     args.bf16 = True
