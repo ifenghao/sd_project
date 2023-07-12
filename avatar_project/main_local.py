@@ -28,6 +28,28 @@ class ModelPreprocessing:
                         else :
                             self.copy_image_to_folder(scale_crop_path, image_path)   
         return crop_num
+    
+    def crop_face_from_path_auto_scale(self, input_path, crop_path, scales_num=10, min_scale=0.8) : 
+        copy_num = 0
+        crop_num = 0
+        for root, dirs, files in os.walk(input_path):
+            for file_name in files: 
+                if file_name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    image_path    = os.path.join(root, file_name)
+                    image, face = self.get_face_detect_result(image_path)
+                    if face is None:
+                        self.copy_image_to_folder(crop_path, image_path)
+                        copy_num += 1
+                    else:
+                        max_scale = self.get_max_face_scale(image, face)
+                        scale_step = (max_scale - min_scale) / scales_num
+                        for i in range(scales_num):
+                            cropped_image = self.get_square_face_at_scale(image, face, min_scale + i * scale_step)
+                            scale_crop_path = crop_path + str(i)
+                            os.makedirs(scale_crop_path, exist_ok=True)
+                            self.save_cropped_image(os.path.join(scale_crop_path, file_name),  cropped_image)
+                            crop_num +=1 
+        return crop_num
 
     def extract_face_and_shoulders(self, image_path, scale_x=2.8, scale_y=3):
         try : 
@@ -95,6 +117,44 @@ class ModelPreprocessing:
         except Exception as e:
             print(f"截取头像失败:{e},{image_path}")  
             return None 
+        
+    def get_face_detect_result(self, image_path):
+        try : 
+            image = cv2.imread(image_path) 
+            gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            faces = self.detector(gray)
+
+            if len(faces) != 1 : 
+                return None, None 
+            else :  
+                return image, faces[0]
+        except Exception as e:
+            print(f"截取头像失败:{e},{image_path}")  
+            return None, None
+        
+    def get_max_face_scale(self, image, face):
+        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        image_width, image_height = image.shape[1], image.shape[0]
+        side = max(w, h)
+        left_max_pad = left
+        right_max_pad = image_width - 1 - (left + side)
+        top_max_pad = top
+        bottom_max_pad = image_height - 1 - (top + side)
+        max_pad_min = min(left_max_pad, right_max_pad, top_max_pad, bottom_max_pad)
+        max_scale = 2 * max_pad_min / side + 1
+        return max_scale
+    
+    def get_square_face_at_scale(self, image, face, scale):
+        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        side = max(w, h)
+        # 扩展裁剪区域
+        padding = int(side * (scale - 1) / 2)
+        left_bound = left - padding
+        top_bound = top - padding
+        right_bound = left + side + padding
+        bottom_bound = top + side + padding
+        cropped_face = image[top_bound:bottom_bound, left_bound:right_bound]
+        return cropped_face
     
     def copy_image_from_path(self, input_path, copy_path):
         copy_num = 0
@@ -264,19 +324,19 @@ def generate_info_prompt(sex_code, age):
 def generate_prompt_dict(sex_str, sex2_str, age_str):
     prompt_dict = {
         '200001': {
-            'pos': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
+            'pos': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, upper body, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
             'neg': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
         },
         '200002': {
-            'pos': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, {age}".format(sex=sex_str, age=age_str),
+            'pos': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
             'neg': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
         },
         '200003': {
-            'pos': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{sex}, {age}".format(sex=sex_str, age=age_str),
+            'pos': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
             'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
         },
         '200004': {
-            'pos': "((master piece)),best quality, illustration, 1{sex}, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'pos': "((master piece)),best quality, illustration, 1{sex}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
             'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
         },
         '200005': {
@@ -288,7 +348,7 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
             'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
         },
         '200007': {
-            'pos': "((master piece)),best quality, illustration, dark, 1{sex}, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'pos': "((master piece)),best quality, illustration, dark, 1{sex}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
             'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
         },
         # '200008': {
@@ -347,14 +407,14 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['test1', ]
-    train_image_sex_code_list = [100002, ]
-    train_image_age_list = [30, ]
+    train_image_name_list = ['zfh', ]
+    train_image_sex_code_list = [100001, ]
+    train_image_age_list = [26, ]
     params_dict_list = [
-        {'text_encoder_lr': 1e-5, 'unet_lr':1e-5, 'learning_rate':1e-5, 'seed': 47},
+        {'text_encoder_lr': 2e-5, 'unet_lr':2e-5, 'learning_rate':2e-5, 'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
-    gen_params_dict = {'images_per_prompt': 1, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
+    gen_params_dict = {'images_per_prompt': 4, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
     print(name_list)
@@ -367,8 +427,8 @@ if __name__ == '__main__':
                                                 style_code='200001,200002,200004,200003,200006,200005,200007')
             image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="20")
             preprocessor = ModelPreprocessing()
-            copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
-            crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
+            # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
+            crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
-            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, train_params=params, gen_params=gen_params_dict)
+            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, train_params=params, gen_params=gen_params_dict)
             concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), by_row=True)

@@ -106,8 +106,8 @@ if __name__ == '__main__':
 
                     #STEP 2.5: 对下载的图片进行截取
                     preprocessor = ModelPreprocessing(logger)
-                    copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
-                    crop_num = preprocessor.crop_face_from_path(image_recieve_path, image_crop_path)
+                    # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
+                    copy_num, crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
                     logger.info('order_id:{},共复制{}张/截取{}张图片'.format(order_id,str(copy_num),str(crop_num)))
                         
                     #STEP3 train model and predict
