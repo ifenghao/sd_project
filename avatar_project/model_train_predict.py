@@ -70,7 +70,7 @@ class ModelImageProcessor:
             output_sample_images = []
         return output_sample_images
     
-    def gen_img(self, use_step=-1, params={}):
+    def generate(self, use_step=-1, highres_fix=False, params={}):
         model_file_list = os.listdir(self.model_path)
         model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
         total_steps = len(model_file_list)
@@ -83,20 +83,21 @@ class ModelImageProcessor:
         try:
             output_gen_images = gen_img(outdir=self.output_path, 
                                         network_weights=os.path.join(self.model_path, model_file), 
-                                        from_file=os.path.join(self.output_path, 'prompt.txt'),
+                                        from_file=os.path.join(self.output_path, 'prompt.txt',),
+                                        highres_fix=highres_fix,
                                         **params)
         except Exception as e:
             self.logger.error('order_id:{},生成出错 {}'.format(self.order_id, e))
             output_gen_images = []
         return output_gen_images
 
-    def process_with_gen(self, gen_sample_image=True, use_step=-1, train_params={}, gen_params={}):
+    def process_with_gen(self, gen_sample_image=True, use_step=-1, highres_fix=False, train_params={}, gen_params={}):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
             self.logger.info('order_id:{},没有风格用于生成'.format(self.order_id))
             return {}
         output_sample_images = self.train(gen_sample_image, params=train_params)
-        output_gen_images = self.gen_img(use_step, params=gen_params)
+        output_gen_images = self.generate(use_step, highres_fix, params=gen_params)
         output_images = output_gen_images
         # 整理图片结果
         num_style = len(valid_style_code_list)

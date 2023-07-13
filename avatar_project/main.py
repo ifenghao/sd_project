@@ -111,7 +111,7 @@ if __name__ == '__main__':
                     logger.info('order_id:{},共复制{}张/截取{}张图片'.format(order_id,str(copy_num),str(crop_num)))
                         
                     #STEP3 train model and predict
-                    local_output_dict = model_processor.process_with_gen(gen_sample_image=False, use_step=-1)
+                    local_output_dict = model_processor.process_with_gen(gen_sample_image=False, use_step=-1, highres_fix=True)
                     print(local_output_dict)
                     logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                     

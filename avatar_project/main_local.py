@@ -256,7 +256,7 @@ class ModelImageProcessor:
             output_sample_images = []
         return output_sample_images
     
-    def gen_img(self, use_step=-1, params={}):
+    def generate(self, use_step=-1, highres_fix=False, params={}):
         model_file_list = os.listdir(self.model_path)
         model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
         total_steps = len(model_file_list)
@@ -270,20 +270,21 @@ class ModelImageProcessor:
             output_gen_images = gen_img(outdir=self.output_path, 
                                         network_weights=os.path.join(self.model_path, model_file), 
                                         from_file=os.path.join(self.output_path, 'prompt.txt'),
+                                        highres_fix=highres_fix,
                                         **params)
         except Exception as e:
             print('order_id:{},生成出错 {}'.format(self.order_id, e))
             output_gen_images = []
         return output_gen_images
     
-    def process(self, run_train=True, gen_sample_image=True, use_step=-1, train_params={}, gen_params={}):
+    def process(self, run_train=True, gen_sample_image=True, use_step=-1, highres_fix=False, train_params={}, gen_params={}):
         valid_style_code_list = self.generate_prompt()
         if len(valid_style_code_list) == 0:
             print('order_id:{},没有风格用于生成'.format(self.order_id))
             return []
         if run_train:
             output_sample_images = self.train(gen_sample_image, params=train_params)
-        output_gen_images = self.gen_img(use_step, params=gen_params)
+        output_gen_images = self.generate(use_step, highres_fix, params=gen_params)
         return len(valid_style_code_list), output_gen_images
 
     def process_test(self) :
@@ -422,7 +423,7 @@ if __name__ == '__main__':
         for params in params_dict_list:
             model_processor = ModelImageProcessor(user_id=None, 
                                                 order_id=name, 
-                                                sex_code=sex_code, 
+                                                sex_code=sex_code,
                                                 age=age, 
                                                 style_code='200001,200002,200004,200003,200006,200005,200007')
             image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="20")
@@ -430,5 +431,5 @@ if __name__ == '__main__':
             # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
-            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, train_params=params, gen_params=gen_params_dict)
+            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, highres_fix=True, train_params=params, gen_params=gen_params_dict)
             concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), by_row=True)

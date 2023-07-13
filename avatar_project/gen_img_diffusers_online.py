@@ -3628,6 +3628,7 @@ def gen_img(outdir, network_weights, from_file,
             network_mul=1,
             steps=25,
             sampler='heun',
+            highres_fix=False,
             seed=None
             ):
     embed_path = './models/embeddings/'
@@ -3645,8 +3646,16 @@ def gen_img(outdir, network_weights, from_file,
     args.network_module = ['networks.lora']
     args.textual_inversion_embeddings = [embed_path + 'EasyNegative.safetensors', embed_path + 'ng_deepnegative_v1_75t.pt', embed_path + 'badhandv4.pt']
     args.max_embeddings_multiples = 5
+    args.batch_size = 1
     args.xformers = True
     args.bf16 = True
+
+    if highres_fix:
+        args.W = 1024
+        args.H = 1024
+        args.highres_fix_scale = 0.5
+        args.highres_fix_steps = 15
+        args.strength = 0.5
 
     output_images = main(args)
     return output_images

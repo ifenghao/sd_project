@@ -1133,13 +1133,13 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 base_model_path="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors", # 底模路径
                 # 训练参数
                 network_mul=1.0, # lora应用权重0~1
-                text_encoder_lr=2e-5,
-                unet_lr=2e-5,
-                learning_rate=2e-5,
+                text_encoder_lr=5e-5,
+                unet_lr=5e-5,
+                learning_rate=5e-5,
                 lr_scheduler="constant_with_warmup",
                 lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
                 lr_warmup_steps=500, # 配合 constant_with_warmup
-                max_train_steps=3000,
+                max_train_steps=2000,
                 max_train_epochs=None,
                 save_every_n_steps=500,
                 save_every_n_epochs=None,
