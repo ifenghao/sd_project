@@ -3654,7 +3654,7 @@ def gen_img(outdir, network_weights, from_file,
         args.W = 1024
         args.H = 1024
         args.highres_fix_scale = 0.5
-        args.highres_fix_steps = 15
+        args.highres_fix_steps = 10
         args.strength = 0.5
 
     output_images = main(args)
