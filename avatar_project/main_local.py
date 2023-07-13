@@ -407,7 +407,7 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zfh', ]
+    train_image_name_list = ['shr', ]
     train_image_sex_code_list = [100001, ]
     train_image_age_list = [26, ]
     params_dict_list = [
