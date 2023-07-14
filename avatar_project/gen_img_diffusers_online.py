@@ -3627,7 +3627,7 @@ def gen_img(outdir, network_weights, from_file,
             images_per_prompt=4,
             network_mul=1,
             steps=30,
-            sampler='heun',
+            sampler='euler_a',
             highres_fix=False,
             seed=None
             ):
