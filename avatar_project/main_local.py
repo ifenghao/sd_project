@@ -360,15 +360,15 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
     return prompt_dict
 
 
-def concat_images(image_path_list, valid_prompt_num, result_path, by_row=True):
+def concat_images(image_path_list, valid_prompt_num, result_path, highres_fix=False, by_row=True):
     image_num = len(image_path_list)
     if image_num == 0:
         print('No image generated')
         return
     ROW = valid_prompt_num
     COL = image_num // ROW
-    UNIT_WIDTH_SIZE = 512
-    UNIT_HEIGHT_SIZE = 512
+    UNIT_WIDTH_SIZE = 512 if not highres_fix else 1024
+    UNIT_HEIGHT_SIZE = 512 if not highres_fix else 1024
     image_files = []
     for index in range(COL*ROW):
         image_files.append(Image.open(image_path_list[index])) #读取所有用于拼接的图片
@@ -408,14 +408,14 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['shr', ]
+    train_image_name_list = ['zfh', ]
     train_image_sex_code_list = [100001, ]
     train_image_age_list = [26, ]
     params_dict_list = [
         {'text_encoder_lr': 2e-5, 'unet_lr':2e-5, 'learning_rate':2e-5, 'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
-    gen_params_dict = {'images_per_prompt': 4, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
+    gen_params_dict = {'images_per_prompt': 2, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
     print(name_list)
@@ -432,4 +432,4 @@ if __name__ == '__main__':
             crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
             valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, highres_fix=True, train_params=params, gen_params=gen_params_dict)
-            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), by_row=True)
+            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), highres_fix=True, by_row=True)

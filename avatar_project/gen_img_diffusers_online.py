@@ -3626,7 +3626,7 @@ def gen_img(outdir, network_weights, from_file,
             ckpt="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors",
             images_per_prompt=4,
             network_mul=1,
-            steps=25,
+            steps=30,
             sampler='heun',
             highres_fix=False,
             seed=None
@@ -3655,7 +3655,7 @@ def gen_img(outdir, network_weights, from_file,
         args.H = 1024
         args.highres_fix_scale = 0.5
         args.highres_fix_steps = 10
-        args.strength = 0.5
+        args.strength = 0.1
 
     output_images = main(args)
     return output_images
