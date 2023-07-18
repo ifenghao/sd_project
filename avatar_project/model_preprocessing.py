@@ -114,7 +114,7 @@ class ModelPreprocessing:
             self.logger.error(f"截取头像失败:{e},{image_path}")
             return None
 
-    def get_face_detect_result(self, image_path):
+    def get_face_detect_result(self, image_path, min_face_reso=32):
         try : 
             image = cv2.imread(image_path) 
             gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -122,8 +122,12 @@ class ModelPreprocessing:
 
             if len(faces) != 1 : 
                 return None, None 
-            else :  
-                return image, faces[0]
+            else:
+                face = faces[0]
+                w, h = face.width(), face.height()
+                if w <= min_face_reso and h <= min_face_reso:
+                    return None, None
+                return image, face
         except Exception as e:
             self.logger.error(f"截取头像失败:{e},{image_path}")
             return None, None

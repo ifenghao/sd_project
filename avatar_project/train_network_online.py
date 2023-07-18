@@ -1179,7 +1179,7 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.optimizer_type="AdamW"
     args.max_data_loader_n_workers=16
     args.enable_bucket=True
-    args.bucket_reso_steps=64
+    args.bucket_reso_steps=16
     args.bucket_no_upscale=True
     args.xformers=True
     args.sample_min_epochs=1
