@@ -3278,9 +3278,9 @@ def main(args):
                                     network_muls.append(0.0)
                                 for v in m.group(1).split(","):
                                     name, mul = v.split(":")
-                                    index = args.network_index_dict.get(name, -1)
+                                    index = args.network_index_dict.get(name.strip(), -1)
                                     if index >= 0:
-                                        network_muls[index] = float(mul)
+                                        network_muls[index] = float(mul.strip())
                                 print(f"network mul: {network_muls}")
                                 continue
 
@@ -3657,8 +3657,6 @@ def gen_img(outdir, network_weights, from_file,
     args.xformers = True
     args.bf16 = True
 
-    args.network_index_dict = {'train': 0}
-
     if highres_fix:
         args.W = 1024
         args.H = 1024
@@ -3666,6 +3664,10 @@ def gen_img(outdir, network_weights, from_file,
         args.highres_fix_steps = 20
         args.strength = 0.2
 
+    # 支持extra_loras配置权重，默认加载所有extra_loras，但权重为0不生效
+    # 想让extra_loras生效需要在prompt里加入 --am train:1.0,3DMM_V11.safetensors:0.8
+    # tips: `train`表示训练所得lora可不配置（默认权重1.0），名称不匹配的extra_loras不会生效
+    args.network_index_dict = {'train': 0}
     if extra_loras:
         for index, lora_name in enumerate(extra_loras):
             args.network_weights.append(extra_lora_path + lora_name)
