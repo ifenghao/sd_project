@@ -3271,11 +3271,16 @@ def main(args):
                                 print(f"clip prompt: {clip_prompt}")
                                 continue
 
-                            m = re.match(r"am ([\d\.\-,]+)", parg, re.IGNORECASE)
+                            m = re.match(r"am ([\w+\.:\-\d+,]+)", parg, re.IGNORECASE)
                             if m:  # network multiplies
-                                network_muls = [float(v) for v in m.group(1).split(",")]
+                                network_muls = [1.0]
                                 while len(network_muls) < len(networks):
-                                    network_muls.append(network_muls[-1])
+                                    network_muls.append(0.0)
+                                for v in m.group(1).split(","):
+                                    name, mul = v.split(":")
+                                    index = args.network_index_dict.get(name, -1)
+                                    if index >= 0:
+                                        network_muls[index] = float(mul)
                                 print(f"network mul: {network_muls}")
                                 continue
 
@@ -3629,9 +3634,11 @@ def gen_img(outdir, network_weights, from_file,
             steps=30,
             sampler='euler_a',
             highres_fix=False,
+            extra_loras=['3DMM_V11.safetensors'],
             seed=None
             ):
     embed_path = './models/embeddings/'
+    extra_lora_path = './models/loras/'
     parser = setup_parser()
     args = parser.parse_args()
     args.outdir = outdir
@@ -3650,12 +3657,21 @@ def gen_img(outdir, network_weights, from_file,
     args.xformers = True
     args.bf16 = True
 
+    args.network_index_dict = {'train': 0}
+
     if highres_fix:
         args.W = 1024
         args.H = 1024
         args.highres_fix_scale = 0.5
         args.highres_fix_steps = 20
         args.strength = 0.2
+
+    if extra_loras:
+        for index, lora_name in enumerate(extra_loras):
+            args.network_weights.append(extra_lora_path + lora_name)
+            args.network_mul.append(0.0)
+            args.network_module.append('networks.lora')
+            args.network_index_dict[lora_name] = index + 1
 
     output_images = main(args)
     return output_images
