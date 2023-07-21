@@ -9,7 +9,12 @@
 
 import os
 import oss2
- 
+import time
+from logger_manager import init_logger
+
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")  
+logger  = init_logger(log_dir, "main")  
+
 class HandleOSSUtil(object):
     def __init__(self, key_id, key_secret, bucket=None):
         '''
@@ -22,46 +27,52 @@ class HandleOSSUtil(object):
         if bucket:
             self.bucket = oss2.Bucket(self.auth, self.link_url, bucket)
 
-    def update_one_file(self, oss_path,file_path):
+    def update_one_file(self, oss_path, file_path):
         '''
         @summary: 将一个文件上传
         @param file_path: 要上传图片的本地地址，如：images/O12023061915104587300002/output/20001_O12023061915104587300001_1.jpg
-        @param oss_dir:   oss上的output路径: userdata-image-output/20001_O12023061915104587300001_1.jpg
-        @return:
+        @param oss_path:   oss上的output路径: userdata-image-output/20001_O12023061915104587300001_1.jpg
+        @update: 增加最大重试次数
         '''
-        result = self.bucket.put_object_from_file(oss_path, file_path)
-        if result.status == 200:
-            return 1
- 
-    def update_file(self, oss_dir,file_dir ):
-        '''
-        @summary: 将一个文件夹下面的所有文件都上传
-        @param file_dir: 要上传图片所在的文件夹，例如：/images
-        @param oss_dir:  oss上的路径: userdata-image-output
-        @return:
-        '''
-        for i in os.listdir(file_dir):
-            if i.endswith(".jpg"):
-                # oss上传后的路径
-                oss_path = f'{oss_dir}/{i}'
-                # 本地文件路径
-                file_path = f'{file_dir}/{i}'
-                # 进行上传
-                self.bucket.put_object_from_file(oss_path, file_path)
-            
+        max_retries = 3 
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                result = self.bucket.put_object_from_file(oss_path, file_path)
+                if result.status == 200:
+                    return 1
+            except Exception as e:
+                retry_count += 1
+                logger.error('oss上传发生异常:{},重试第{}次, file_path:{}'.format(str(e),retry_count,file_path))
+                time.sleep(1)  
+        
+        logger.error('oss上传重试三次失败, file_path: {}'.format(file_path))
+        return 0
+
  
     def download_one_file(self, oss_path, save_dir):
         '''
         @summary: 下载单个文件
         @param oss_path: 文件所在的oss地址，例如：test/test.png
         @param save_dir: 要保存在本地的文件目录，例如：/images
-        @return:
+        @update: 增加最大重试次数
         '''
         file_name = oss_path.split('/')[-1]
         save_path = os.path.join(save_dir, file_name)
-        result = self.bucket.get_object_to_file(oss_path, save_path)
-        if result.status == 200:
-            return 1
+        try_count = 0
+        max_retries = 3  
+        while try_count < max_retries:
+            try:
+                result = self.bucket.get_object_to_file(oss_path, save_path)
+                if result.status == 200:
+                    return 1
+            except Exception as e:
+                try_count += 1
+                logger.error('oss下载发生异常:{}, 重试第{}次, oss_path:{}'.format(str(e),try_count, oss_path))
+                time.sleep(1)  
+
+        logger.error('oss下载重试三次失败,oss_path:{}'.format(oss_path))
+        return 0
  
     # 下载文件夹中所有文件
     def download_many_file(self, oss_dir, save_dir):
