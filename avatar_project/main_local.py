@@ -4,6 +4,7 @@ import shutil
 import dlib
 import cv2
 from PIL import Image
+from collections import OrderedDict
 from train_network_online import train_online
 from tag_images_by_wd14_tagger_online import tag_images
 from gen_img_diffusers_online import gen_img
@@ -224,23 +225,6 @@ class ModelImageProcessor:
                    max_data_loader_n_workers=max_data_loader_n_workers,
                    general_threshold=general_threshold,
                    character_threshold=character_threshold)
-
-    def generate_prompt(self):
-        sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
-        prompt_dict = generate_prompt_dict(sex_str, sex2_str, age_str)
-        prompt_list = []
-        style_code_list = str(self.style_code).split(',')
-        valid_style_code_list = []
-        for style_code in style_code_list:
-            if style_code in prompt_dict:
-                prompt = prompt_dict[style_code]
-                prompt_list.append("{} --n {}\n".format(prompt['pos'], prompt['neg']))
-                valid_style_code_list.append(style_code)
-        if len(valid_style_code_list) == 0:
-            return []
-        with open(os.path.join(self.output_path, "prompt.txt"), 'w') as f:
-            f.writelines(prompt_list)
-        return valid_style_code_list
     
     def train(self, gen_sample_image=True, params={}):
         if not gen_sample_image:
@@ -260,36 +244,39 @@ class ModelImageProcessor:
             output_sample_images = []
         return output_sample_images
     
-    def generate(self, use_step=-1, highres_fix=False, params={}):
+    def generate(self, gen_info, use_step=-1, highres_fix=False, params={}):
         model_file_list = os.listdir(self.model_path)
         model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
         total_steps = len(model_file_list)
         if total_steps == 0 or use_step >= total_steps:
             print('No lora model is loaded')
             return []
-        model_file = model_file_list[use_step]
+        model_file = os.path.join(self.model_path, model_file_list[use_step])
         print('select model file: ' + model_file)
+        gen_img_pass_list = parse_gen_info(gen_info)
+        lora_path = './models/lora/'
         # 生成图片
-        try:
-            output_gen_images = gen_img(outdir=self.output_path, 
-                                        network_weights=os.path.join(self.model_path, model_file), 
-                                        from_file=os.path.join(self.output_path, 'prompt.txt'),
-                                        highres_fix=highres_fix,
-                                        **params)
-        except Exception as e:
-            print('order_id:{},生成出错 {}'.format(self.order_id, e))
-            output_gen_images = []
+        output_gen_images = []
+        for params in gen_img_pass_list:
+            network_weights_paths = [model_file if name == 'train.safetensors' else lora_path + name for name in params['network_weights']]
+            try:
+                output_pass_images = gen_img(outdir=self.output_path, 
+                                            network_weights=network_weights_paths,
+                                            prompt=params['prompt'],
+                                            highres_fix=highres_fix)
+            except Exception as e:
+                print('order_id:{},生成出错 {}'.format(self.order_id, e))
+                output_pass_images = []
+            output_gen_images.extend(output_pass_images)
         return output_gen_images
     
     def process(self, run_train=True, gen_sample_image=True, use_step=-1, highres_fix=False, train_params={}, gen_params={}):
-        valid_style_code_list = self.generate_prompt()
-        if len(valid_style_code_list) == 0:
-            print('order_id:{},没有风格用于生成'.format(self.order_id))
-            return []
+        sex_str, sex2_str, age_str = generate_info_prompt(self.sex_code, self.age)
+        gen_info = generate_prompt_dict(sex_str, sex2_str, age_str)
         if run_train:
             output_sample_images = self.train(gen_sample_image, params=train_params)
-        output_gen_images = self.generate(use_step, highres_fix, params=gen_params)
-        return len(valid_style_code_list), output_gen_images
+        output_gen_images = self.generate(gen_info, use_step, highres_fix, params=gen_params)
+        return len(gen_info['style_infos']), output_gen_images
 
     def process_test(self) :
         '''流程测试用'''
@@ -297,6 +284,71 @@ class ModelImageProcessor:
                     "images/O12023061915104587300002/output/20001_O12023061915104587300001_2.jpg"],
         "20002":["images/O12023061915104587300002/output/20002_O12023061915104587300001_1.jpg",
                     "images/O12023061915104587300002/output/20002_O12023061915104587300001_2.jpg"]}
+
+
+def parse_gen_info(info):
+    def style_params_to_prompt(style_params, network_mul):
+        prompt_res = []
+        positive_prompt = style_params.get('positive_prompt')
+        if positive_prompt is not None:
+            prompt_res.append(positive_prompt)
+        negative_prompt = style_params.get('negative_prompt')
+        if negative_prompt is not None:
+            prompt_res.append('--n {}'.format(negative_prompt))
+        prompt_res.append('--w {}'.format(style_params.get('width', 512)))
+        prompt_res.append('--h {}'.format(style_params.get('height', 512)))
+        prompt_res.append('--s {}'.format(style_params.get('steps', 30)))
+        prompt_res.append('--sp {}'.format(style_params.get('sampler', 'euler_a')))
+        seed = style_params.get('seed')
+        if seed is not None:
+            prompt_res.append('--d {}'.format(seed))
+        prompt_res.append('--l {}'.format(style_params.get('scale', 7)))
+        negative_scale = style_params.get('negative_scale')
+        if negative_scale is not None:
+            prompt_res.append('--nl {}'.format(negative_scale))
+        if network_mul:
+            prompt_res.append('--am {}'.format(','.join(network_mul)))
+        return ' '.join(prompt_res)
+
+    style_infos = info.get('style_infos', [])
+    if len(style_infos) == 0:
+        return
+    ckpt_dict = OrderedDict()
+    
+    for style in style_infos:
+        ckpt = style.get('ckpt', None)
+        if ckpt is None:
+            print('No ckpt assigned for style code {}'.format(style.get('code', '')))
+            continue
+        if ckpt not in ckpt_dict:
+            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0}
+        ckpt_dict[ckpt]['ckpt_styles'].append(style)
+        lora_list = style.get('network_weights', [])
+        for lora in lora_list:
+            if lora not in ckpt_dict[ckpt]['lora_index']:
+                ckpt_dict[ckpt]['lora_index'][lora] = ckpt_dict[ckpt]['lora_num']
+                ckpt_dict[ckpt]['lora_num'] += 1
+
+    gen_img_pass_list = []
+    for ckpt, ckpt_info in ckpt_dict.items():
+        lora_index = ckpt_info['lora_index']
+        lora_num = ckpt_info['lora_num']
+        network_weights = [''] * lora_num
+        for lora, index in lora_index.items():
+            network_weights[index] = lora
+
+        prompt_list = []
+        style_code_list = []
+        for ckpt_style in ckpt_info['ckpt_styles']:
+            network_mul = ['0.0'] * lora_num
+            weights_list = ckpt_style.get('network_weights', [])
+            mul_list = ckpt_style.get('network_mul', [])
+            for weights, mul in zip(weights_list, mul_list):
+                network_mul[lora_index[weights]] = str(mul)
+            prompt_list.append(style_params_to_prompt(ckpt_style, network_mul))
+            style_code_list.append(ckpt_style.get('code'))
+        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'style_code': style_code_list})
+    return gen_img_pass_list
 
 
 def generate_info_prompt(sex_code, age):
@@ -327,40 +379,126 @@ def generate_info_prompt(sex_code, age):
 
 
 def generate_prompt_dict(sex_str, sex2_str, age_str):
-    prompt_dict = {
-        '200001': {
-            'pos': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, upper body, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
-            'neg': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
+    prompt_dict = {'style_infos': []}
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200001',
+            'positive_prompt': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{sex}, upper body, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': ['train.safetensors', '3DMM_V11.safetensors'],
+            'network_mul': [1.0, 0.8],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200002': {
-            'pos': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
-            'neg': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t"
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200002',
+            'positive_prompt': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'network_weights': ['train.safetensors', 'FilmVelvia2.safetensors', '3DMM_V11.safetensors'],
+            'network_mul': [1.0, 0.7],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200003': {
-            'pos': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
-            'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200003',
+            'positive_prompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str),
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200004': {
-            'pos': "((master piece)),best quality, illustration, 1{sex}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
-            'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200004',
+            'positive_prompt': "((master piece)),best quality, illustration, 1{sex}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200005': {
-            'pos': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{sex}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {age}".format(sex=sex_str, age=age_str),
-            'neg': "easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200005',
+            'positive_prompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{sex}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200006': {
-            'pos': "1{sex}, hand_gesture, white_hair, multicolored hair, long hair, very long hair, multicolored eyes, (multicolored_background:1.8), solo, smile, looking at viewer, cherry blossoms, grin, hair between eyes, dress, dress, dress_shirt, white_dress, multicolored_dress, bangs, upper body, album cover, {age}".format(sex=sex_str, age=age_str),
-            'neg': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str)
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200006',
+            'positive_prompt': "1{sex}, hand_gesture, white_hair, multicolored hair, long hair, very long hair, multicolored eyes, (multicolored_background:1.8), solo, smile, looking at viewer, cherry blossoms, grin, hair between eyes, dress, dress, dress_shirt, white_dress, multicolored_dress, bangs, upper body, album cover, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str),
+            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        '200007': {
-            'pos': "((master piece)),best quality, illustration, dark, 1{sex}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
-            'neg': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t"
+    )
+    prompt_dict['style_infos'].append(
+        {
+            'code': '200007',
+            'positive_prompt': "((master piece)),best quality, illustration, dark, 1{sex}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
+            'negative_prompt': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
-        # '200008': {
-        #     'pos': "(masterpiece, best quality:1.2), from side, solo, {sex2} focus, 1{sex}, aomine daiki, muscular, serious, closed mouth, sportswear, basketball uniform, basketball court, {age}".format(sex=sex_str, sex2=sex2_str, age=age_str),
-        #     'neg': ""
-        # },
-    }
+    )
     return prompt_dict
 
 
@@ -372,7 +510,7 @@ def concat_images(image_path_list, valid_prompt_num, result_path, highres_fix=Fa
     ROW = valid_prompt_num
     COL = image_num // ROW
     UNIT_WIDTH_SIZE = 512 if not highres_fix else 1024
-    UNIT_HEIGHT_SIZE = 512 if not highres_fix else 1024
+    UNIT_HEIGHT_SIZE = 768 if not highres_fix else 1024
     image_files = []
     for index in range(COL*ROW):
         image_files.append(Image.open(image_path_list[index])) #读取所有用于拼接的图片
@@ -416,10 +554,10 @@ if __name__ == '__main__':
     train_image_sex_code_list = [100001, ]
     train_image_age_list = [26, ]
     params_dict_list = [
-        {'text_encoder_lr': 2e-5, 'unet_lr':2e-5, 'learning_rate':2e-5, 'seed': 47},
+        {'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
-    gen_params_dict = {'images_per_prompt': 2, 'network_mul': 1, 'steps': 30, 'sampler': 'euler_a', 'seed': None}
+    gen_params_dict = {'images_per_prompt': 2, 'seed': None}
     name_list = os.listdir(raw_path)
     name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
     print(name_list)
@@ -435,5 +573,5 @@ if __name__ == '__main__':
             # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
-            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, highres_fix=True, train_params=params, gen_params=gen_params_dict)
-            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), highres_fix=True, by_row=True)
+            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, highres_fix=False, train_params=params, gen_params=gen_params_dict)
+            concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), highres_fix=False, by_row=True)

@@ -503,6 +503,45 @@ def replace_vae_attn_to_memory_efficient():
 
 # endregion
 
+# samplerの乱数をあらかじめ指定するための処理
+
+# replace randn
+class NoiseManager:
+    def __init__(self):
+        self.sampler_noises = None
+        self.sampler_noise_index = 0
+
+    def reset_sampler_noises(self, noises):
+        self.sampler_noise_index = 0
+        self.sampler_noises = noises
+
+    def randn(self, shape, device=None, dtype=None, layout=None, generator=None):
+        # print("replacing", shape, len(self.sampler_noises), self.sampler_noise_index)
+        if self.sampler_noises is not None and self.sampler_noise_index < len(self.sampler_noises):
+            noise = self.sampler_noises[self.sampler_noise_index]
+            if shape != noise.shape:
+                noise = None
+        else:
+            noise = None
+
+        if noise == None:
+            print(f"unexpected noise request: {self.sampler_noise_index}, {shape}")
+            noise = torch.randn(shape, dtype=dtype, device=device, generator=generator)
+
+        self.sampler_noise_index += 1
+        return noise
+
+class TorchRandReplacer:
+    def __init__(self, noise_manager):
+        self.noise_manager = noise_manager
+
+    def __getattr__(self, item):
+        if item == "randn":
+            return self.noise_manager.randn
+        if hasattr(torch, item):
+            return getattr(torch, item)
+        raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, item))
+
 # region 画像生成の本体：lpw_stable_diffusion.py （ASL）からコピーして修正
 # https://github.com/huggingface/diffusers/blob/main/examples/community/lpw_stable_diffusion.py
 # Pipelineだけ独立して使えないのと機能追加するのとでコピーして修正
@@ -646,6 +685,66 @@ class PipelineLike:
 
     def set_control_nets(self, ctrl_nets):
         self.control_nets = ctrl_nets
+
+    def set_scheduler(self, scheduler_name, v_parameterization):
+        sched_init_args = {}
+        scheduler_num_noises_per_step = 1
+        if scheduler_name == "ddim":
+            scheduler_cls = DDIMScheduler
+            scheduler_module = diffusers.schedulers.scheduling_ddim
+        elif scheduler_name == "ddpm":  # ddpmはおかしくなるのでoptionから外してある
+            scheduler_cls = DDPMScheduler
+            scheduler_module = diffusers.schedulers.scheduling_ddpm
+        elif scheduler_name == "pndm":
+            scheduler_cls = PNDMScheduler
+            scheduler_module = diffusers.schedulers.scheduling_pndm
+        elif scheduler_name == "lms" or scheduler_name == "k_lms":
+            scheduler_cls = LMSDiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_lms_discrete
+        elif scheduler_name == "euler" or scheduler_name == "k_euler":
+            scheduler_cls = EulerDiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_euler_discrete
+        elif scheduler_name == "euler_a" or scheduler_name == "k_euler_a":
+            scheduler_cls = EulerAncestralDiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_euler_ancestral_discrete
+        elif scheduler_name == "dpmsolver" or scheduler_name == "dpmsolver++":
+            scheduler_cls = DPMSolverMultistepScheduler
+            sched_init_args["algorithm_type"] = scheduler_name
+            scheduler_module = diffusers.schedulers.scheduling_dpmsolver_multistep
+        elif scheduler_name == "dpmsingle":
+            scheduler_cls = DPMSolverSinglestepScheduler
+            scheduler_module = diffusers.schedulers.scheduling_dpmsolver_singlestep
+        elif scheduler_name == "heun":
+            scheduler_cls = HeunDiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_heun_discrete
+        elif scheduler_name == "dpm_2" or scheduler_name == "k_dpm_2":
+            scheduler_cls = KDPM2DiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_k_dpm_2_discrete
+        elif scheduler_name == "dpm_2_a" or scheduler_name == "k_dpm_2_a":
+            scheduler_cls = KDPM2AncestralDiscreteScheduler
+            scheduler_module = diffusers.schedulers.scheduling_k_dpm_2_ancestral_discrete
+            scheduler_num_noises_per_step = 2
+
+        if v_parameterization:
+            sched_init_args["prediction_type"] = "v_prediction"
+
+        noise_manager = NoiseManager()
+        if scheduler_module is not None:
+            scheduler_module.torch = TorchRandReplacer(noise_manager)
+            
+        self.scheduler = scheduler_cls(
+            num_train_timesteps=SCHEDULER_TIMESTEPS,
+            beta_start=SCHEDULER_LINEAR_START,
+            beta_end=SCHEDULER_LINEAR_END,
+            beta_schedule=SCHEDLER_SCHEDULE,
+            **sched_init_args,
+        )
+
+        # clip_sample=Trueにする
+        if hasattr(self.scheduler.config, "clip_sample") and self.scheduler.config.clip_sample is False:
+            print("set clip_sample to True")
+            self.scheduler.config.clip_sample = True
+        return noise_manager, scheduler_num_noises_per_step
 
     # region xformersとか使う部分：独自に書き換えるので関係なし
 
@@ -2416,45 +2515,6 @@ def main(args):
     if args.v_parameterization:
         sched_init_args["prediction_type"] = "v_prediction"
 
-    # samplerの乱数をあらかじめ指定するための処理
-
-    # replace randn
-    class NoiseManager:
-        def __init__(self):
-            self.sampler_noises = None
-            self.sampler_noise_index = 0
-
-        def reset_sampler_noises(self, noises):
-            self.sampler_noise_index = 0
-            self.sampler_noises = noises
-
-        def randn(self, shape, device=None, dtype=None, layout=None, generator=None):
-            # print("replacing", shape, len(self.sampler_noises), self.sampler_noise_index)
-            if self.sampler_noises is not None and self.sampler_noise_index < len(self.sampler_noises):
-                noise = self.sampler_noises[self.sampler_noise_index]
-                if shape != noise.shape:
-                    noise = None
-            else:
-                noise = None
-
-            if noise == None:
-                print(f"unexpected noise request: {self.sampler_noise_index}, {shape}")
-                noise = torch.randn(shape, dtype=dtype, device=device, generator=generator)
-
-            self.sampler_noise_index += 1
-            return noise
-
-    class TorchRandReplacer:
-        def __init__(self, noise_manager):
-            self.noise_manager = noise_manager
-
-        def __getattr__(self, item):
-            if item == "randn":
-                return self.noise_manager.randn
-            if hasattr(torch, item):
-                return getattr(torch, item)
-            raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, item))
-
     noise_manager = NoiseManager()
     if scheduler_module is not None:
         scheduler_module.torch = TorchRandReplacer(noise_manager)
@@ -2759,7 +2819,7 @@ def main(args):
             prompt_list = f.read().splitlines()
             prompt_list = [d for d in prompt_list if len(d.strip()) > 0]
     elif args.prompt is not None:
-        prompt_list = [args.prompt]
+        prompt_list = args.prompt.split('\n')
     else:
         prompt_list = []
 
@@ -3271,17 +3331,19 @@ def main(args):
                                 print(f"clip prompt: {clip_prompt}")
                                 continue
 
-                            m = re.match(r"am ([\w+\.:\-\d+,]+)", parg, re.IGNORECASE)
+                            m = re.match(r"am ([\d\.\-,]+)", parg, re.IGNORECASE)
                             if m:  # network multiplies
-                                network_muls = [1.0]
+                                network_muls = [float(v) for v in m.group(1).split(",")]
                                 while len(network_muls) < len(networks):
                                     network_muls.append(0.0)
-                                for v in m.group(1).split(","):
-                                    name, mul = v.split(":")
-                                    index = args.network_index_dict.get(name.strip(), -1)
-                                    if index >= 0:
-                                        network_muls[index] = float(mul.strip())
                                 print(f"network mul: {network_muls}")
+                                continue
+
+                            m = re.match(r"sp (\w+)", parg, re.IGNORECASE)
+                            if m:  # sampler
+                                scheduler_name = m.group(1)
+                                print(f"scheduler set: {scheduler_name}")
+                                noise_manager, scheduler_num_noises_per_step = pipe.set_scheduler(scheduler_name, args.v_parameterization)
                                 continue
 
                         except ValueError as ex:
@@ -3627,30 +3689,34 @@ def setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def gen_img(outdir, network_weights, from_file,
-            ckpt="./models/stable-diffusion/dreamshaper_631BakedVae.safetensors",
-            images_per_prompt=4,
-            network_mul=1,
+def gen_img(outdir, network_weights=[], 
+            network_mul=[],
+            prompt=None,
+            from_file=None,
+            ckpt="dreamshaper_631BakedVae.safetensors",
+            images_per_prompt=2,
             steps=30,
             sampler='euler_a',
+            scale=7,
             highres_fix=False,
-            extra_loras=['3DMM_V11.safetensors'],
             seed=None
             ):
+    ckpt_path = './models/stable-diffusion/'
     embed_path = './models/embeddings/'
-    extra_lora_path = './models/loras/'
     parser = setup_parser()
     args = parser.parse_args()
     args.outdir = outdir
     args.from_file = from_file
-    args.ckpt = ckpt
+    args.prompt = prompt
+    args.ckpt = ckpt_path + ckpt
     args.images_per_prompt = images_per_prompt
     args.steps = steps
     args.sampler = sampler
+    args.scale = scale
     args.seed = seed
-    args.network_weights = [network_weights]
-    args.network_mul = [network_mul]
-    args.network_module = ['networks.lora']
+    args.network_weights = network_weights
+    args.network_mul = [0.0] * len(network_weights)  # mul全部配置在prompt的--am参数
+    args.network_module = ['networks.lora'] * len(network_weights)
     args.textual_inversion_embeddings = [embed_path + 'EasyNegative.safetensors', embed_path + 'ng_deepnegative_v1_75t.pt', embed_path + 'badhandv4.pt']
     args.max_embeddings_multiples = 5
     args.batch_size = 1
@@ -3662,18 +3728,7 @@ def gen_img(outdir, network_weights, from_file,
         args.H = 1024
         args.highres_fix_scale = 0.5
         args.highres_fix_steps = 20
-        args.strength = 0.2
-
-    # 支持extra_loras配置权重，默认加载所有extra_loras，但权重为0不生效
-    # 想让extra_loras生效需要在prompt里加入 --am train:1.0,3DMM_V11.safetensors:0.8
-    # tips: `train`表示训练所得lora可不配置（默认权重1.0），名称不匹配的extra_loras不会生效
-    args.network_index_dict = {'train': 0}
-    if extra_loras:
-        for index, lora_name in enumerate(extra_loras):
-            args.network_weights.append(extra_lora_path + lora_name)
-            args.network_mul.append(0.0)
-            args.network_module.append('networks.lora')
-            args.network_index_dict[lora_name] = index + 1
+        args.strength = 0.2      
 
     output_images = main(args)
     return output_images
