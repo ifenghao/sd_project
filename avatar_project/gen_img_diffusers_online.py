@@ -3694,7 +3694,7 @@ def gen_img(outdir, network_weights=[],
             prompt=None,
             from_file=None,
             ckpt="dreamshaper_631BakedVae.safetensors",
-            images_per_prompt=2,
+            images_per_prompt=4,
             steps=30,
             sampler='euler_a',
             scale=7,
@@ -3731,6 +3731,7 @@ def gen_img(outdir, network_weights=[],
         args.strength = 0.2      
 
     output_images = main(args)
+    torch.cuda.empty_cache()
     return output_images
 
 

@@ -10,7 +10,6 @@ from model_preprocessing import ModelPreprocessing
 from urllib.parse import urlparse,urljoin
 import requests 
 import hashlib
-from jinja2 import Template
 import traceback
 
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")  
@@ -47,68 +46,6 @@ def fetch_order_data(apiUrlBase=api_url_base, serverCode=str(server_code)):
     except Exception as e:
         logger.error('取订单接口出错{}'.format(e))
         return None 
-    
-def preprocess_gender_age(sex_code, age, reverse_gender=False):
-    '''处理性别和年龄,默认不性别反转:
-       - {{age_des}} : 'girl'/'young woman'/'woman'/'boy'/'young man'/'man'
-       - {{gender}}  : 'female'/'male' 
-       - {{age_des}} : f'{age} years old'
-       *后期放到后端处理
-    '''
-    def get_age_index(age, age_range):
-        for index, ar in enumerate(age_range):
-            if age <= ar:
-                return index
-        return len(age_range)
-    sex_dict = {
-        '100001': {'gender': 'male', 'obj_list': ['boy', 'young man', 'man'], 'age_range': [16, 28]},
-        '100002': {'gender': 'female', 'obj_list': ['girl', 'young woman', 'woman'], 'age_range': [26, 40]}
-    }
-    sex_info = sex_dict.get(str(sex_code))
-    if sex_info:
-        if reverse_gender:
-            gender_des = sex_info['obj_list'][get_age_index(int(age), sex_info['age_range'])]
-            gender = 'female' if sex_info['gender'] == 'male' else 'male'
-        else:
-            gender_des = sex_info['obj_list'][get_age_index(int(age), sex_info['age_range'])]
-            gender = sex_info['gender']
-    age_des = f'{age} years old'
-    return gender_des, gender, age_des  
-
-def modified_prompt(prompt_template,gender_des,gender,age_des):
-    '''根据预处理好的年龄、性别修改prompt中的参数'''
-    template = Template(prompt_template)
-    modified_prompt = template.render(gender_des=gender_des, gender=gender, age_des=age_des)
-    return modified_prompt
-
-def convert_style_res_list(style_res_list, gender_des, gender, age_des):
-    style_infos = [] 
-    for style_res in style_res_list : 
-        code = style_res.get('code','')
-        gen_params_dict = {}
-        pos_prompt = style_res.get('posPrompt','')
-        neg_prompt = style_res.get('negPrompt','')
-        mod_pos_prompt = modified_prompt(pos_prompt,gender_des,gender,age_des) 
-        mod_neg_prompt = modified_prompt(neg_prompt,gender_des,gender,age_des) 
-        prompt = "{} --n {}".format(mod_pos_prompt, mod_neg_prompt)
-        network_weights = style_res.get('network_weights',['train.safetensors'])  #默认值是['train.safetensors']
-        network_mul     = style_res.get('network_mul',[1.0])                      #默认值是[1.0]
-        ckpt    = style_res.get('ckpt','dreamshaper_631BakedVae.safetensors') 
-        sampler = style_res.get('sampler','euler') 
-        steps   = style_res.get('steps',30)   
-        width   = style_res.get('width',512)   
-        height  = style_res.get('height',512) 
-        gen_params_dict['code']   = code 
-        gen_params_dict['prompt'] = prompt 
-        gen_params_dict['ckpt']   = "./models/stable-diffusion/"+ckpt
-        gen_params_dict['network_weights'] = [network_weights[0]] + ['./models/lora/' + i for i in network_weights[1:]]
-        gen_params_dict['network_mul'] = network_mul
-        gen_params_dict['sampler'] = sampler 
-        gen_params_dict['steps'] = steps
-        gen_params_dict['W'] = width 
-        gen_params_dict['H'] = height 
-        style_infos.append(gen_params_dict)
-    return style_infos
 
 def insert_ai_order_photo(user_id, order_id, output_dict):
     ''':Description:结果图片url 存入 mm_ai_order_photo,
@@ -150,20 +87,14 @@ if __name__ == '__main__':
             logger.info('抢单成功,user_id:{},order_id:{},style_code:{}'.format(user_id,order_id,style_code))
             try: 
                 sex_code   = fetch_data.get("sexCode")
-                age = fetch_data.get("age") 
+                age = fetch_data.get("age")
+                images_per_prompt = fetch_data.get("photoNum", 4)
                 photos_info    = fetch_data.get('photoUrls',[]) 
-                style_res_list = fetch_data.get("styleResList",[])  
-                gender_des, gender, age_des = preprocess_gender_age(sex_code,age,reverse_gender=False)   
-                model_params = {"order_id":order_id}  
-                style_infos  = convert_style_res_list(style_res_list, gender_des, gender, age_des)
-                model_params['style_infos'] = style_infos
-                logger.info('风格预处理后:{}'.format(model_params))
+                style_res_list = fetch_data.get("styleResList",[])                
             
                 #STEP2: 提取用户上传图片,下载到input文件夹
                 if photos_info and len(photos_info)>0 : 
-                    model_processor = ModelImageProcessor(logger, user_id, order_id, sex_code, age, style_code)  
-                    # TODO 改这里
-#                     model_processor = ModelImageProcessor(logger, order_id, model_params) 
+                    model_processor = ModelImageProcessor(logger, user_id, order_id, sex_code, age, style_code)
                     image_recieve_path, image_crop_path = model_processor.prepare_paths()
 
                     num_photo = 0 
@@ -180,7 +111,7 @@ if __name__ == '__main__':
                     logger.info('order_id:{},共复制{}张/截取{}张图片'.format(order_id,str(copy_num),str(crop_num)))
                         
                     #STEP3 train model and predict
-                    local_output_dict = model_processor.process_with_gen(gen_sample_image=False, use_step=-1, highres_fix=True)
+                    local_output_dict = model_processor.process_with_gen(style_res_list, images_per_prompt, gen_sample_image=False, use_step=-1, highres_fix=False)
                     print(local_output_dict)
                     logger.info('order_id:{},模型训练和预测结束'.format(order_id)) 
                     
