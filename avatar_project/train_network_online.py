@@ -1146,7 +1146,7 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 # 采样参数
                 sample_every_n_steps=500,
                 sample_every_n_epochs=None,
-                sample_sampler="heun",
+                sample_sampler="euler_a",
                 cfg_scale=7,
                 sample_steps=25,
                 seed=47,

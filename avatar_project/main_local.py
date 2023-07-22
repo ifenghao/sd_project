@@ -262,6 +262,7 @@ class ModelImageProcessor:
             try:
                 output_pass_images = gen_img(outdir=self.output_path, 
                                             network_weights=network_weights_paths,
+                                            ckpt=params['ckpt'],
                                             prompt=params['prompt'],
                                             highres_fix=highres_fix)
             except Exception as e:
@@ -398,7 +399,7 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
             'code': '200002',
             'posPrompt': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{sex}, upper body, {age}".format(sex=sex_str, age=age_str),
             'negPrompt': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t",
-            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'ckpt': 'chilloutmix_NiPrunedFp16Fix.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -466,7 +467,7 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
             'code': '200006',
             'posPrompt': "1{sex}, hand_gesture, white_hair, multicolored hair, long hair, very long hair, multicolored eyes, (multicolored_background:1.8), solo, smile, looking at viewer, cherry blossoms, grin, hair between eyes, dress, dress, dress_shirt, white_dress, multicolored_dress, bangs, upper body, album cover, {age}".format(sex=sex_str, age=age_str),
             'negPrompt': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{sex})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t".format(sex=sex_str),
-            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'ckpt': 'chilloutmix_NiPrunedFp16Fix.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -483,7 +484,7 @@ def generate_prompt_dict(sex_str, sex2_str, age_str):
             'code': '200007',
             'posPrompt': "((master piece)),best quality, illustration, dark, 1{sex}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {age}".format(sex=sex_str, age=age_str),
             'negPrompt': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
-            'ckpt': 'chilloutmix_NiPrunedFp32Fix.safetensors',
+            'ckpt': 'chilloutmix_NiPrunedFp16Fix.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -546,11 +547,11 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj4_2', ]
-    train_image_sex_code_list = [100002, ]
+    train_image_name_list = ['zfh', ]
+    train_image_sex_code_list = [100001, ]
     train_image_age_list = [25, ]
     params_dict_list = [
-        {'seed': 47},
+        {'max_train_steps':100, 'seed': 47},
         # {'base_model_path': './models/stable-diffusion/dreamshaper_631BakedVae.safetensors', 'seed': 47},
     ]
     gen_params_dict = {'images_per_prompt': 2, 'seed': None}
@@ -569,5 +570,5 @@ if __name__ == '__main__':
             # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)
             crop_num = preprocessor.crop_face_from_path_auto_scale(image_recieve_path, image_crop_path)
             # model_processor.generate_tags()
-            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=0, highres_fix=False, train_params=params, gen_params=gen_params_dict)
+            valid_prompt_num, output_images = model_processor.process(run_train, gen_sample_image=False, use_step=-1, highres_fix=False, train_params=params, gen_params=gen_params_dict)
             concat_images(output_images, valid_prompt_num, os.path.join(root_path, name, dict_to_image_name(params)), highres_fix=False, by_row=True)

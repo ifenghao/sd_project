@@ -74,8 +74,9 @@ class ModelImageProcessor:
         for params in gen_img_pass_list:
             network_weights_paths = [model_file if name == 'train.safetensors' else lora_path + name for name in params['network_weights']]
             try:
-                output_pass_images = gen_img(outdir=self.output_path, 
+                output_pass_images = gen_img(outdir=self.output_path,
                                             network_weights=network_weights_paths,
+                                            ckpt=params['ckpt'],
                                             prompt=params['prompt'],
                                             highres_fix=highres_fix,
                                             images_per_prompt=images_per_prompt)
@@ -95,12 +96,11 @@ class ModelImageProcessor:
         output_images = output_gen_images
         # 整理图片结果
         num_style = len(output_style_codes)
-        num_image_per_style = len(output_images) // num_style
         style_image_list = []
         for i in range(num_style):
             style_image_list.append([])
         for i, image in enumerate(output_images):
-            style_image_list[i // num_image_per_style].append(image)
+            style_image_list[i // images_per_prompt].append(image)
         # 返回图片地址字典
         image_dict = dict(zip(output_style_codes, style_image_list))
         return image_dict

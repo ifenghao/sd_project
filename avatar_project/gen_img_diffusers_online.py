@@ -2430,7 +2430,7 @@ def main(args):
 
     use_stable_diffusion_format = os.path.isfile(args.ckpt)
     if use_stable_diffusion_format:
-        print("load StableDiffusion checkpoint")
+        print("load StableDiffusion checkpoint: " + args.ckpt)
         text_encoder, vae, unet = model_util.load_models_from_stable_diffusion_checkpoint(args.v2, args.ckpt)
     else:
         print("load Diffusers pretrained models")

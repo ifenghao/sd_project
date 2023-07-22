@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 age = fetch_data.get("age")
                 images_per_prompt = fetch_data.get("photoNum", 4)
                 photos_info    = fetch_data.get('photoUrls',[]) 
-                style_res_list = fetch_data.get("styleResList",[])                
+                style_res_list = fetch_data.get("styleResList",[])
             
                 #STEP2: 提取用户上传图片,下载到input文件夹
                 if photos_info and len(photos_info)>0 : 
