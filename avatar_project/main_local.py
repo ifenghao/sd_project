@@ -390,8 +390,8 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
 
 
 def generate_prompt():
-    prompt_dict = []
-    prompt_dict.append(
+    prompt_list = []
+    prompt_list.append(
         {
             'code': '200001',
             'posPrompt': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{{gender_des}}, upper body, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {{age_des}}",
@@ -408,7 +408,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200002',
             'posPrompt': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{{gender_des}}, upper body, {{age_des}}",
@@ -425,7 +425,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200003',
             'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{{gender_des}}, upper body, {{age_des}}",
@@ -442,7 +442,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200004',
             'posPrompt': "((master piece)),best quality, illustration, 1{{gender_des}}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {{age_des}}",
@@ -459,7 +459,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200005',
             'posPrompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{{gender_des}}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {{age_des}}",
@@ -476,7 +476,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200007',
             'posPrompt': "((master piece)),best quality, illustration, dark, 1{{gender_des}}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {{age_des}}",
@@ -493,7 +493,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200008',
             'posPrompt': "1{{gender_des}}, solo, long hair, looking at viewer, colorful background, colorful hair, simple background, colorful eyes, lips, closed mouth, ribbon, hair ribbon, bangs,school uniform, upper body, parted bangs, colorful ribbon , nose",
@@ -510,7 +510,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200009',
             'posPrompt': "1{{gender_des}}, ((delicate skin)),mechanical collar,abstract art, half cyberpunk machine melting into human face, beautiful, colorful paint skin, bobcut, portrait, extreme detail, (colorful background:1.2), color splash,Neon city, RAW candid cinema, 16mm, color graded portra 400 film, remarkable color, ultra realistic, remarkable detailed pupils, shot with cinematic camera, 8K",
@@ -527,7 +527,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200010',
             'posPrompt': "best quality,masterpiece,highres,1{{gender_des}},blush,(seductive smile:0.8),star-shaped pupils,red china hanfu,hanfu,chinese clothes,hair ornament,necklace,jewelry,Beautiful face,upon_body,tyndall effect,photorealistic,dark studio,rim lighting,two tone lighting,(high detailed skin:1.2),8k uhd,dslr,soft lighting,high quality,volumetric lighting,candid,Photograph,high resolution,4k,8k,Bokeh",
@@ -544,7 +544,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200011',
             'posPrompt': "masterpiece, best quality,RAW,(expensive portrait of a {{gender_des}}), gorgeous strapless evening gown,exquisite necklace,exquisite earrings,delicate skin,detailed hair, perfect face, beautiful face, detailed eyes,smiling eyes,smiling,beautiful eyelashes,looking at viewer, (((half-length portrait))), professional lighting, photography studio,artistic black background, god rays, artistic photography, detailed face, (body towards viewer),night,light on face,volumetric lighting,tyndall effect,rim lighting,Bokeh,DSLR",
@@ -561,7 +561,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    prompt_dict.append(
+    prompt_list.append(
         {
             'code': '200012',
             'posPrompt': "Best portrait photography, 35mm film, natural blurry, 1{{gender_des}}, sun dress, wide brimmed hat, radiant complexion, whimsical pose, fluttering hair, golden sunlight, macro shot, shallow depth of field, bokeh, dreamy",
@@ -578,7 +578,9 @@ def generate_prompt():
             'height': 768
         },
     )
-    return prompt_dict
+    retain_code = ['200003', '200004', '200005']
+    prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
+    return prompt_list
 
 
 def concat_images(image_path_list, valid_prompt_num, result_path, highres_fix=False, by_row=True):
