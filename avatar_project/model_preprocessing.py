@@ -133,7 +133,7 @@ class ModelPreprocessing:
             return None, None
         
     def get_max_face_scale(self, image, face):
-        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        left, top, w, h = max(face.left(), 0), max(face.top(), 0), face.width(), face.height()
         image_width, image_height = image.shape[1], image.shape[0]
         side = max(w, h)
         left_max_pad = left
@@ -145,7 +145,7 @@ class ModelPreprocessing:
         return max_scale
     
     def get_square_face_at_scale(self, image, face, scale):
-        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        left, top, w, h = max(face.left(), 0), max(face.top(), 0), face.width(), face.height()
         side = max(w, h)
         # 扩展裁剪区域
         padding = int(side * (scale - 1) / 2)

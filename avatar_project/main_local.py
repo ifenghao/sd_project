@@ -139,7 +139,7 @@ class ModelPreprocessing:
             return None, None
         
     def get_max_face_scale(self, image, face):
-        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        left, top, w, h = max(face.left(), 0), max(face.top(), 0), face.width(), face.height()
         image_width, image_height = image.shape[1], image.shape[0]
         side = max(w, h)
         left_max_pad = left
@@ -151,7 +151,7 @@ class ModelPreprocessing:
         return max_scale
     
     def get_square_face_at_scale(self, image, face, scale):
-        left, top, w, h = face.left(), face.top(), face.width(), face.height()
+        left, top, w, h = max(face.left(), 0), max(face.top(), 0), face.width(), face.height()
         side = max(w, h)
         # 扩展裁剪区域
         padding = int(side * (scale - 1) / 2)
@@ -394,8 +394,8 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200001',
-            'posPrompt': "3dmm style,(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (fractal art:1.3), 1{{gender_des}}, upper body, beautiful, high detailed, purple hair with a hint of pink, pink eyes, dark lighting, serious face, looking the sky, sky, medium shot, black sweater, jewelry, {{age_des}}",
-            'negPrompt': "tattooing,Neck decoration, collar, necklace,collar,badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t",
+            'posPrompt': " (wearing equitation_outfit, wearing cap:1.3), white equitation_outfit, good hand,4k, high-res, masterpiece, best quality, head:1.3,((Hasselblad photography)), finely detailed skin, sharp focus, (cinematic lighting), night, soft lighting, dynamic angle, [:(detailed face:1.2):0.2], medium breasts,(((in front of a crowd))), outside",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'dreamshaper_631BakedVae.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -412,7 +412,7 @@ def generate_prompt():
         {
             'code': '200002',
             'posPrompt': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{{gender_des}}, upper body, {{age_des}}",
-            'negPrompt': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), EasyNegative, ng_deepnegative_v1_75t",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'dreamshaper_631BakedVae.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -429,7 +429,7 @@ def generate_prompt():
         {
             'code': '200003',
             'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{{gender_des}}, upper body, {{age_des}}",
-            'negPrompt': "sketch, duplicate, ugly, huge eyes, text, logo, monochrome, worst face, (bad and mutated hands:1.3), (worst quality:2.0), (low quality:2.0), (blurry:2.0), horror, geometry, bad_prompt, (bad hands), (missing fingers), multiple limbs, bad anatomy, (interlocked fingers:1.2), Ugly Fingers, (extra digit and hands and fingers and legs and arms:1.4), crown braid, ((2{{gender_des}})), (deformed fingers:1.2), (long fingers:1.2),succubus wings,horn,succubus horn,succubus hairstyle, (bad-artist-anime), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'dreamshaper_631BakedVae.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -446,7 +446,24 @@ def generate_prompt():
         {
             'code': '200004',
             'posPrompt': "((master piece)),best quality, illustration, 1{{gender_des}}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {{age_des}}",
-            'negPrompt': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
+        }
+    )
+    prompt_list.append(
+        {
+            'code': '200005',
+            'posPrompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{{gender_des}}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {{age_des}}",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'dreamshaper_631BakedVae.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -461,9 +478,9 @@ def generate_prompt():
     )
     prompt_list.append(
         {
-            'code': '200005',
-            'posPrompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{{gender_des}}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {{age_des}}",
-            'negPrompt': "easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'code': '200006',
+            'posPrompt': "((master piece)),best quality, illustration, dark, 1{{gender_des}}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {{age_des}}",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'dreamshaper_631BakedVae.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -479,25 +496,8 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200007',
-            'posPrompt': "((master piece)),best quality, illustration, dark, 1{{gender_des}}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {{age_des}}",
-            'negPrompt': "sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((grayscale)), skin spots, skin blemishes, bad anatomy, ((monochrome)), (((extra legs))), ((grayscale)),DeepNegative, tilted head, lowres, bad a natomy, bad hands, text, error, fewer digits, cropped, worstquality, low quality, bad legs, fused fingers,too many fingers,long neck,cross-eyed,mutated hands,polar lowres,bad body,bad proportions,gross proportions,missing fingers,missing arms,missing legs,extra digit , extra arms, extra leg, extra foot, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
-            'scale': 7,
-            'negative_scale': None,
-            'seed': None,
-            'sampler': 'euler_a',
-            'steps': 30,
-            'width': 512,
-            'height': 768
-        },
-    )
-    prompt_list.append(
-        {
-            'code': '200008',
             'posPrompt': "1{{gender_des}}, solo, long hair, looking at viewer, colorful background, colorful hair, simple background, colorful eyes, lips, closed mouth, ribbon, hair ribbon, bangs,school uniform, upper body, parted bangs, colorful ribbon , nose",
-            'negPrompt': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5)",
+            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
             'ckpt': 'revAnimated_v122.safetensors',
             'network_weights': ['train.safetensors','3DMM_V12.safetensors','more_details.safetensors'],
             'network_mul': [1.0,0.75,0.1],
@@ -583,6 +583,41 @@ def generate_prompt():
     return prompt_list
 
 
+def transfer_prompt():
+    import pandas as pd
+    prompt_file = "/mnt/c/Users/Admin/Desktop/prompt.xlsx"
+    prompt_pd = pd.read_excel(prompt_file)
+    num = len(prompt_pd)
+    prompt_list = []
+    for i in range(num):
+        network_weights = ['train.safetensors']
+        network_mul = [1.0]
+        lora_name = prompt_pd.iloc[i, 2]
+        if not pd.isna(lora_name):
+            if lora_name == 'polyhedron_skinny_all':
+                network_weights.append(prompt_pd.iloc[i, 2] + '.pt')
+            else:
+                network_weights.append(prompt_pd.iloc[i, 2] + '.safetensors')
+            network_mul.append(0.6)
+        prompt_info = {
+            'code': '200000',
+            'posPrompt': prompt_pd.iloc[i, 0],
+            'negPrompt': prompt_pd.iloc[i, 1],
+            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'network_weights': network_weights,
+            'network_mul': network_mul,
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler',
+            'steps': 25,
+            'width': 512,
+            'height': 768
+        }
+        prompt_list.append(prompt_info)
+    return prompt_list
+
+
 def concat_images(image_path_list, valid_prompt_num, result_path, highres_fix=False, by_row=True):
     image_num = len(image_path_list)
     if image_num == 0:
@@ -641,13 +676,11 @@ if __name__ == '__main__':
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         # {'base_model_path': 'revAnimated_v122.safetensors', 'seed': 47},
     ]
-    gen_params_dict = {'seed': None}
-    images_per_prompt = 6
-    name_list = os.listdir(raw_path)
-    name_list = list(filter(lambda t: os.path.isdir(os.path.join(raw_path, t)) and t in train_image_name_list, sorted(name_list)))
-    print(name_list)
-    style_res_list = generate_prompt()
-    for name, sex_code, age in zip(name_list, train_image_sex_code_list, train_image_age_list):
+    gen_params_dict = {'seed': 47}
+    images_per_prompt = 2
+    style_res_list = transfer_prompt()
+    for name, sex_code, age in zip(train_image_name_list, train_image_sex_code_list, train_image_age_list):
+        print(name)
         for params in params_dict_list:
             model_processor = ModelImageProcessor(user_id=None, 
                                                 order_id=name, 
