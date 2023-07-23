@@ -1130,7 +1130,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
 
 def train_online(lora_name, model_input_path, model_path, log_path, output_path, # 路径参数
-                base_model_path="./models/stable-diffusion/chilloutmix_NiPrunedFp16Fix.safetensors", # 底模路径
+                base_model_path="chilloutmix_NiPrunedFp16Fix.safetensors", # 底模路径
                 # 训练参数
                 network_mul=1.0, # lora应用权重0~1
                 text_encoder_lr=5e-5,
@@ -1155,9 +1155,9 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
 
     args = parser.parse_args()
     args = train_util.read_config_from_file(args, parser)
-
+    sd_model = "./models/stable-diffusion/"
     ### online args ###
-    args.pretrained_model_name_or_path=base_model_path
+    args.pretrained_model_name_or_path=sd_model + base_model_path
     args.train_data_dir=model_input_path
     args.output_dir=model_path
     args.output_name=lora_name

@@ -151,5 +151,5 @@ if __name__ == '__main__':
                     logger.error('order_id:{},update_status5 失败'.format(order_id)) 
                 logger.error("抢单后发生异常,update5,异常回溯:{},order_id:{}".format(traceback.format_exc(),order_id) )
         else:
-            logger.warning('本次未抢到单')
+            print('本次未抢到单')
         time.sleep(5)  # 休眠5秒 
