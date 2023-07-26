@@ -3717,7 +3717,12 @@ def gen_img(outdir, network_weights=[],
     args.network_weights = network_weights
     args.network_mul = [0.0] * len(network_weights)  # mul全部配置在prompt的--am参数
     args.network_module = ['networks.lora'] * len(network_weights)
-    args.textual_inversion_embeddings = [embed_path + 'EasyNegative.safetensors', embed_path + 'ng_deepnegative_v1_75t.pt', embed_path + 'badhandv4.pt']
+    args.textual_inversion_embeddings = [embed_path + 'EasyNegative.safetensors', 
+                                         embed_path + 'ng_deepnegative_v1_75t.pt', 
+                                         embed_path + 'badhandv4.pt',
+                                         embed_path + 'BadDream.pt',
+                                         embed_path + 'FastNegativeV2.pt',
+                                         embed_path + 'Style-GravityMagic.pt']
     args.max_embeddings_multiples = 5
     args.batch_size = 1
     args.xformers = True

@@ -517,12 +517,12 @@ def generate_prompt():
             'negPrompt': "easynegative, CyberRealistic_Negative-neg, ng_deepnegative_v1_75t",
             'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.6],
+            'network_mul': [1.0,0.5],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
             'sampler': 'euler_a',
-            'steps': 30,
+            'steps': 27,
             'width': 512,
             'height': 768
         },
@@ -567,8 +567,8 @@ def generate_prompt():
             'posPrompt': "Best portrait photography, 35mm film, natural blurry, 1{{gender_des}}, sun dress, wide brimmed hat, radiant complexion, whimsical pose, fluttering hair, golden sunlight, macro shot, shallow depth of field, bokeh, dreamy",
             'negPrompt': "(worst quality, low quality, bad_pictures, negative_hand-neg:1.2)(large breasts:1.3),EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
             'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
+            'network_weights': ['train.safetensors','more_details.safetensors'],
+            'network_mul': [1.0,0.8],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
@@ -576,9 +576,43 @@ def generate_prompt():
             'steps': 20,
             'width': 512,
             'height': 768
+        }
+    )
+    prompt_list.append(
+        {
+            'code': '200013',
+            'posPrompt': "8k portrait, Chaos, magical planet, universe, Milky Way, spacecraft, beautiful eyes, (upper body:1.2), vibrant colors, highly detailed, digital painting, Style-Gravitymagic, artstation, concept art, smooth, sharp focus, illustration, Unreal Engine 5, 8K, 1{{gender_des}}, {{age_des}}",
+            'negPrompt': "BadDream, FastNegativeV2, naked, nude, nipples, vagina, glans",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 9,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
         },
     )
-    retain_code = ['200003', '200004', '200005']
+    prompt_list.append(
+        {
+            'code': '200014',
+            'posPrompt': "8k portrait of {{gender}} celestial, 1{{gender_des}}, deity, goddess Style-Gravitymagic, sparkle, light particles, halo, looking at viewer, bioluminescent flame, bioluminescence, phoenix, beautiful eyes, (upper body:1.2), Vibrant, Colorful, Color, 8k, high quality, hyper realistic, professional photography, {{age_des}}",
+            'negPrompt': "BadDream, FastNegativeV2, naked, nude, nipples, vagina, glans",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 9,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
+        },
+    )
+    retain_code = ['200013', '200014']
     prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
     return prompt_list
 
@@ -591,26 +625,26 @@ def transfer_prompt():
     prompt_list = []
     for i in range(num):
         network_weights = ['train.safetensors']
-        network_mul = [1.0]
+        network_mul = [1]
         lora_name = prompt_pd.iloc[i, 2]
         if not pd.isna(lora_name):
             if lora_name == 'polyhedron_skinny_all':
                 network_weights.append(prompt_pd.iloc[i, 2] + '.pt')
             else:
                 network_weights.append(prompt_pd.iloc[i, 2] + '.safetensors')
-            network_mul.append(0.6)
+            network_mul.append(0.7)
         prompt_info = {
             'code': '200000',
             'posPrompt': prompt_pd.iloc[i, 0],
             'negPrompt': prompt_pd.iloc[i, 1],
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': network_weights,
             'network_mul': network_mul,
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler',
-            'steps': 25,
+            'sampler': 'euler_a',
+            'steps': 30,
             'width': 512,
             'height': 768
         }
@@ -666,11 +700,11 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj', 'shr']
-    train_image_sex_code_list = [100002, 100001]
-    train_image_age_list = [25, 26]
+    train_image_name_list = ['zkj']
+    train_image_sex_code_list = [100002]
+    train_image_age_list = [25]
     params_dict_list = [
-        {'base_model_path': 'chilloutmix_NiPrunedFp16Fix.safetensors', 'seed': 47},
+        {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         # {'base_model_path': 'dreamshaper_631BakedVae.safetensors', 'seed': 47},
         # {'base_model_path': 'leosamsMoonfilm_filmGrain20.safetensors', 'seed': 47},
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
@@ -678,7 +712,8 @@ if __name__ == '__main__':
     ]
     gen_params_dict = {'seed': 47}
     images_per_prompt = 2
-    style_res_list = transfer_prompt()
+    # style_res_list = transfer_prompt()
+    style_res_list = generate_prompt()
     for name, sex_code, age in zip(train_image_name_list, train_image_sex_code_list, train_image_age_list):
         print(name)
         for params in params_dict_list:
