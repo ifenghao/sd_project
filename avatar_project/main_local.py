@@ -725,8 +725,8 @@ if __name__ == '__main__':
     train_image_sex_code_list = [100002]
     train_image_age_list = [25]
     params_dict_list = [
-        {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
-        # {'base_model_path': 'dreamshaper_7.safetensors', 'seed': 47},
+        # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
+        {'base_model_path': 'dreamshaper_7.safetensors', 'seed': 47},
         # {'base_model_path': 'leosamsMoonfilm_filmGrain20.safetensors', 'seed': 47},
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         # {'base_model_path': 'revAnimated_v122.safetensors', 'seed': 47},

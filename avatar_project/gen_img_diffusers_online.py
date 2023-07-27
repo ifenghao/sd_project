@@ -3725,7 +3725,7 @@ def gen_img(outdir, network_weights=[],
                                          embed_path + 'BadDream.pt',
                                          embed_path + 'FastNegativeV2.pt',
                                          embed_path + 'Style-GravityMagic.pt',
-                                         embed_path + 'style-paintmagic']
+                                         embed_path + 'style-paintmagic.pt']
     args.max_embeddings_multiples = 5
     args.batch_size = 1
     args.xformers = True
