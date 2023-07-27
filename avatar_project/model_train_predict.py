@@ -22,7 +22,7 @@ class ModelImageProcessor:
         self.style_code = style_code
         self.logger = logger
 
-    def prepare_paths(self, num_repeat="20"):
+    def prepare_paths(self, num_repeat="5"):
         root_path = "./train_online"
         self.image_recieve_path = os.path.join(root_path, self.order_id, "image_raw")
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
@@ -181,10 +181,10 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
             print('No ckpt assigned for style code {}'.format(style.get('code', '')))
             continue
         if ckpt not in ckpt_dict:
-            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', None)}
+            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', 'None')}
         ckpt_dict[ckpt]['ckpt_styles'].append(style)
-        if ckpt_dict[ckpt]['vae'] is None:
-            ckpt_dict[ckpt]['vae'] = style.get('vae', None)
+        if ckpt_dict[ckpt]['vae'] == 'None':
+            ckpt_dict[ckpt]['vae'] = style.get('vae', 'None')
         lora_list = style.get('network_weights', [])
         for lora in lora_list:
             if lora not in ckpt_dict[ckpt]['lora_index']:
@@ -200,6 +200,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
         for lora, index in lora_index.items():
             network_weights[index] = lora
 
+        vae = None if vae == 'None' else ckpt_info['vae']
         prompt_list = []
         style_code_list = []
         for ckpt_style in ckpt_info['ckpt_styles']:
@@ -210,5 +211,5 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
                 network_mul[lora_index[weights]] = str(mul)
             prompt_list.append(style_params_to_prompt(ckpt_style, network_mul))
             style_code_list.append(ckpt_style.get('code'))
-        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': ckpt_info['vae'], 'style_code': style_code_list})
+        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': vae, 'style_code': style_code_list})
     return gen_img_pass_list

@@ -201,7 +201,7 @@ class ModelImageProcessor:
         self.age = age
         self.style_code = style_code
 
-    def prepare_paths(self, raw_path, num_repeat="50"):
+    def prepare_paths(self, raw_path, num_repeat="5"):
         root_path = "./train"
         self.image_recieve_path = os.path.join(raw_path, self.order_id)
         self.model_input_path = os.path.join(root_path, self.order_id, "image")
@@ -359,10 +359,10 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
             print('No ckpt assigned for style code {}'.format(style.get('code', '')))
             continue
         if ckpt not in ckpt_dict:
-            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', None)}
+            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', 'None')}
         ckpt_dict[ckpt]['ckpt_styles'].append(style)
-        if ckpt_dict[ckpt]['vae'] is None:
-            ckpt_dict[ckpt]['vae'] = style.get('vae', None)
+        if ckpt_dict[ckpt]['vae'] == 'None':
+            ckpt_dict[ckpt]['vae'] = style.get('vae', 'None')
         lora_list = style.get('network_weights', [])
         for lora in lora_list:
             if lora not in ckpt_dict[ckpt]['lora_index']:
@@ -378,6 +378,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
         for lora, index in lora_index.items():
             network_weights[index] = lora
 
+        vae = None if vae == 'None' else ckpt_info['vae']
         prompt_list = []
         style_code_list = []
         for ckpt_style in ckpt_info['ckpt_styles']:
@@ -388,7 +389,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
                 network_mul[lora_index[weights]] = str(mul)
             prompt_list.append(style_params_to_prompt(ckpt_style, network_mul))
             style_code_list.append(ckpt_style.get('code'))
-        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': ckpt_info['vae'], 'style_code': style_code_list})
+        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': vae, 'style_code': style_code_list})
     return gen_img_pass_list
 
 
@@ -618,21 +619,21 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200015',
-            'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree on head, broken glass, (masterpiece, sidelighting1.2), shoulders, upper body, finely detailed beautiful eyes, hdr, 1{{gender_des}}, {{age_des}}",
-            'negPrompt': "multiple limbs, bad anatomy, crown braid, ((2{{gender}})), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
-            'ckpt': 'dreamshaper_7.safetensors',
+            'posPrompt': "(2D),Ambilight, masterpiece, best quality,realistic photography,detailed asian face, (original illustration composition),1{{gender_des}},in car background,black business suit,(upper body without hands)",
+            'negPrompt': "(naked),easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler_a',
-            'steps': 30,
+            'sampler': 'euler-a',
+            'steps': 25,
             'width': 512,
             'height': 768
         },
     )
-    retain_code = ['200013', '200014']
+    retain_code = ['200015']
     prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
     return prompt_list
 
@@ -720,12 +721,12 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj']
-    train_image_sex_code_list = [100002]
+    train_image_name_list = ['shr']
+    train_image_sex_code_list = [100001]
     train_image_age_list = [25]
     params_dict_list = [
         {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
-        # {'base_model_path': 'dreamshaper_631BakedVae.safetensors', 'seed': 47},
+        # {'base_model_path': 'dreamshaper_7.safetensors', 'seed': 47},
         # {'base_model_path': 'leosamsMoonfilm_filmGrain20.safetensors', 'seed': 47},
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         # {'base_model_path': 'revAnimated_v122.safetensors', 'seed': 47},
@@ -742,7 +743,7 @@ if __name__ == '__main__':
                                                 sex_code=sex_code,
                                                 age=age, 
                                                 style_code='200001,200002,200004,200003,200006,200005,200007')
-            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="20")
+            image_recieve_path, image_crop_path = model_processor.prepare_paths(raw_path, num_repeat="5")
             preprocessor = ModelPreprocessing()
             if run_train:
                 # copy_num = preprocessor.copy_image_from_path(image_recieve_path, image_crop_path)

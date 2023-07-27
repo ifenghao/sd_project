@@ -1138,13 +1138,13 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
                 learning_rate=5e-5,
                 lr_scheduler="constant_with_warmup",
                 lr_scheduler_num_cycles=10, # 配合 cosine_with_restarts
-                lr_warmup_steps=500, # 配合 constant_with_warmup
-                max_train_steps=2000,
-                max_train_epochs=None,
-                save_every_n_steps=500,
+                lr_warmup_steps=400, # 配合 constant_with_warmup
+                max_train_steps=None,
+                max_train_epochs=5,
+                save_every_n_steps=1000,
                 save_every_n_epochs=None,
                 # 采样参数
-                sample_every_n_steps=500,
+                sample_every_n_steps=400,
                 sample_every_n_epochs=None,
                 sample_sampler="euler_a",
                 cfg_scale=7,
