@@ -200,7 +200,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
         for lora, index in lora_index.items():
             network_weights[index] = lora
 
-        vae = None if vae == 'None' else ckpt_info['vae']
+        vae = None if ckpt_info['vae'] == 'None' else ckpt_info['vae']
         prompt_list = []
         style_code_list = []
         for ckpt_style in ckpt_info['ckpt_styles']:

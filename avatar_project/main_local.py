@@ -378,7 +378,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
         for lora, index in lora_index.items():
             network_weights[index] = lora
 
-        vae = None if vae == 'None' else ckpt_info['vae']
+        vae = None if ckpt_info['vae'] == 'None' else ckpt_info['vae']
         prompt_list = []
         style_code_list = []
         for ckpt_style in ckpt_info['ckpt_styles']:
@@ -602,8 +602,8 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200014',
-            'posPrompt': "1{{gender_des}},portrait of scarlett,beautiful, oil on canvas, romanticism,asian face",
-            'negPrompt': "anime, cartoon, penis, fake, drawing, illustration, boring, 3d render, long neck, out of frame, extra fingers, mutated hands, ((monochrome)), ((poorly drawn hands)), 3DCG, cgstation, ((flat chested)), red eyes, multiple subjects, extra heads, close up, man asian, text ,watermarks, logo, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, 3d, extra fingers, (((mutated hands and fingers))), large breasts, weapons, underwear, panties, cleavage",
+            'posPrompt': "Style-PaintMagic, photo of a beautiful goth girl with thick flowing (liquid paint rainbow hair:1.1) made of paint and defies gravity, space background, highly detailed, intricate, amazing, trending, paint splatter, paint drops",
+            'negPrompt': "bad anatomy, low-res, (watermarks:1.2), username, paintings, sketches, (worst quality:2), hat, hats,(low quality:2), (normal quality:2), monochrome, grayscale, (easynegative:1.1), [ng_deepnegative_v1_75t] bad anatomy, low-res, poorly drawn face, disfigured hands, poorly drawn eyebrows, bad body perspective, animal tail, anime, nipples, pussy, wrong anatomy, poorly drawn legs, wrong perspective legs, poorly drawn hands, (bad-hands-5:1.8), wrong hand, yellow light, canvas frame, cartoon, 3d, ((disfigured)), ((bad art)), ((deformed)),((extra limbs)),((close up)),((b&w)), wierd colors, blurry, (((duplicate))), ((morbid)), ((mutilated)), [out of frame], signature, watermarks, vile_prompt3",
             'ckpt': 'dreamshaper_7.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -633,7 +633,7 @@ def generate_prompt():
             'height': 768
         },
     )
-    retain_code = ['200015']
+    retain_code = ['200014']
     prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
     return prompt_list
 
@@ -721,8 +721,8 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['shr']
-    train_image_sex_code_list = [100001]
+    train_image_name_list = ['zkj']
+    train_image_sex_code_list = [100002]
     train_image_age_list = [25]
     params_dict_list = [
         {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
