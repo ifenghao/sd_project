@@ -78,6 +78,7 @@ class ModelImageProcessor:
                                             network_weights=network_weights_paths,
                                             ckpt=params['ckpt'],
                                             prompt=params['prompt'],
+                                            vae=params['vae'],
                                             highres_fix=highres_fix,
                                             images_per_prompt=images_per_prompt)
             except Exception as e:
@@ -180,8 +181,10 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
             print('No ckpt assigned for style code {}'.format(style.get('code', '')))
             continue
         if ckpt not in ckpt_dict:
-            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0}
+            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', None)}
         ckpt_dict[ckpt]['ckpt_styles'].append(style)
+        if ckpt_dict[ckpt]['vae'] is None:
+            ckpt_dict[ckpt]['vae'] = style.get('vae', None)
         lora_list = style.get('network_weights', [])
         for lora in lora_list:
             if lora not in ckpt_dict[ckpt]['lora_index']:
@@ -207,5 +210,5 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
                 network_mul[lora_index[weights]] = str(mul)
             prompt_list.append(style_params_to_prompt(ckpt_style, network_mul))
             style_code_list.append(ckpt_style.get('code'))
-        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'style_code': style_code_list})
+        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': ckpt_info['vae'], 'style_code': style_code_list})
     return gen_img_pass_list

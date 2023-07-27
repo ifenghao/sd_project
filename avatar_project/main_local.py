@@ -268,6 +268,7 @@ class ModelImageProcessor:
                                             network_weights=network_weights_paths,
                                             ckpt=params['ckpt'],
                                             prompt=params['prompt'],
+                                            vae=params['vae'],
                                             highres_fix=highres_fix,
                                             images_per_prompt=images_per_prompt)
             except Exception as e:
@@ -358,8 +359,10 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
             print('No ckpt assigned for style code {}'.format(style.get('code', '')))
             continue
         if ckpt not in ckpt_dict:
-            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0}
+            ckpt_dict[ckpt] = {'ckpt_styles': [], 'lora_index': {}, 'lora_num': 0, 'vae': style.get('vae', None)}
         ckpt_dict[ckpt]['ckpt_styles'].append(style)
+        if ckpt_dict[ckpt]['vae'] is None:
+            ckpt_dict[ckpt]['vae'] = style.get('vae', None)
         lora_list = style.get('network_weights', [])
         for lora in lora_list:
             if lora not in ckpt_dict[ckpt]['lora_index']:
@@ -385,7 +388,7 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
                 network_mul[lora_index[weights]] = str(mul)
             prompt_list.append(style_params_to_prompt(ckpt_style, network_mul))
             style_code_list.append(ckpt_style.get('code'))
-        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'style_code': style_code_list})
+        gen_img_pass_list.append({'ckpt': ckpt, 'network_weights': network_weights, 'prompt': '\n'.join(prompt_list), 'vae': ckpt_info['vae'], 'style_code': style_code_list})
     return gen_img_pass_list
 
 
@@ -581,7 +584,7 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200013',
-            'posPrompt': "8k portrait, Chaos, magical planet, universe, Milky Way, spacecraft, beautiful eyes, (upper body:1.2), vibrant colors, highly detailed, digital painting, Style-Gravitymagic, artstation, concept art, smooth, sharp focus, illustration, Unreal Engine 5, 8K, 1{{gender_des}}, {{age_des}}",
+            'posPrompt': "8k portrait of {{gender}} celestial, 1{{gender_des}}, Style-Gravitymagic, sparkle, light particles, halo, looking at viewer, bioluminescent flame, bioluminescence, phoenix, beautiful eyes, (upper body:1.2), Vibrant, Colorful, Color, 8k, high quality, hyper realistic, professional photography, {{age_des}}",
             'negPrompt': "BadDream, FastNegativeV2, naked, nude, nipples, vagina, glans",
             'ckpt': 'dreamshaper_7.safetensors',
             'network_weights': ['train.safetensors'],
@@ -598,12 +601,29 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200014',
-            'posPrompt': "8k portrait of {{gender}} celestial, 1{{gender_des}}, deity, goddess Style-Gravitymagic, sparkle, light particles, halo, looking at viewer, bioluminescent flame, bioluminescence, phoenix, beautiful eyes, (upper body:1.2), Vibrant, Colorful, Color, 8k, high quality, hyper realistic, professional photography, {{age_des}}",
-            'negPrompt': "BadDream, FastNegativeV2, naked, nude, nipples, vagina, glans",
+            'posPrompt': "1{{gender_des}},portrait of scarlett,beautiful, oil on canvas, romanticism,asian face",
+            'negPrompt': "anime, cartoon, penis, fake, drawing, illustration, boring, 3d render, long neck, out of frame, extra fingers, mutated hands, ((monochrome)), ((poorly drawn hands)), 3DCG, cgstation, ((flat chested)), red eyes, multiple subjects, extra heads, close up, man asian, text ,watermarks, logo, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, 3d, extra fingers, (((mutated hands and fingers))), large breasts, weapons, underwear, panties, cleavage",
             'ckpt': 'dreamshaper_7.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 9,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200015',
+            'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree on head, broken glass, (masterpiece, sidelighting1.2), shoulders, upper body, finely detailed beautiful eyes, hdr, 1{{gender_des}}, {{age_des}}",
+            'negPrompt': "multiple limbs, bad anatomy, crown braid, ((2{{gender}})), bad-artist, bad hand, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
             'negative_scale': None,
             'seed': None,
             'sampler': 'euler_a',
@@ -711,7 +731,7 @@ if __name__ == '__main__':
         # {'base_model_path': 'revAnimated_v122.safetensors', 'seed': 47},
     ]
     gen_params_dict = {'seed': 47}
-    images_per_prompt = 2
+    images_per_prompt = 4
     # style_res_list = transfer_prompt()
     style_res_list = generate_prompt()
     for name, sex_code, age in zip(train_image_name_list, train_image_sex_code_list, train_image_age_list):
