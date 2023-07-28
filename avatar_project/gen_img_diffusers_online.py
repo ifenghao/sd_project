@@ -3711,7 +3711,6 @@ def gen_img(outdir, network_weights=[],
     args.from_file = from_file
     args.prompt = prompt
     args.ckpt = ckpt_path + ckpt
-    args.vae = vae_path + vae
     args.images_per_prompt = images_per_prompt
     args.steps = steps
     args.sampler = sampler
@@ -3731,6 +3730,10 @@ def gen_img(outdir, network_weights=[],
     args.batch_size = 1
     args.xformers = True
     args.bf16 = True
+
+    args.vae = None
+    if vae is not None:
+         args.vae = vae_path + vae
 
     if highres_fix:
         args.W = 1024
