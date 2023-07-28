@@ -3704,13 +3704,14 @@ def gen_img(outdir, network_weights=[],
             ):
     ckpt_path = './models/stable-diffusion/'
     embed_path = './models/embeddings/'
+    vae_path = './models/vae/'
     parser = setup_parser()
     args = parser.parse_args()
     args.outdir = outdir
     args.from_file = from_file
     args.prompt = prompt
     args.ckpt = ckpt_path + ckpt
-    args.vae = vae
+    args.vae = vae_path + vae
     args.images_per_prompt = images_per_prompt
     args.steps = steps
     args.sampler = sampler

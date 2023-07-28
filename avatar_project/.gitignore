@@ -14,7 +14,9 @@ outputs/*
 !outputs/lora inference result.txt
 models/*
 !models/put all models here.txt
-!models/stable-diffusion/put ckpt model here.txt
+!models/stable-diffusion/put ckpt models here.txt
+!models/lora/put lora models here.txt
+!models/vae/put vae models here.txt
 !models/embeddings
 
 train_online/*

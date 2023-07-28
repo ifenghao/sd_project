@@ -585,16 +585,16 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200013',
-            'posPrompt': "8k portrait of {{gender}} celestial, 1{{gender_des}}, Style-Gravitymagic, sparkle, light particles, halo, looking at viewer, bioluminescent flame, bioluminescence, phoenix, beautiful eyes, (upper body:1.2), Vibrant, Colorful, Color, 8k, high quality, hyper realistic, professional photography, {{age_des}}",
-            'negPrompt': "BadDream, FastNegativeV2, naked, nude, nipples, vagina, glans",
-            'ckpt': 'dreamshaper_7.safetensors',
+            'posPrompt': "1{{gender_des}} in a modern, elegant ball gown, styled with a sleek updo and minimalist jewelry, confident regal expression, luxurious modern palace, clean lines, high ceilings, extravagant chandeliers, high definition, sharp focus, soft blurred background, captivating portrait,upper body, diamond diadema on head,a little bit confident smile",
+            'negPrompt': "(worst quality, low quality), badhandv4, EasyNegative, ng_deepnegative_v1_75t,",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
-            'scale': 9,
+            'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler_a',
-            'steps': 30,
+            'sampler': 'euler-a',
+            'steps': 25,
             'width': 512,
             'height': 768
         },
@@ -619,21 +619,22 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200015',
-            'posPrompt': "(2D),Ambilight, masterpiece, best quality,realistic photography,detailed asian face, (original illustration composition),1{{gender_des}},in car background,black business suit,(upper body without hands)",
-            'negPrompt': "(naked),easyNegative,(realistic),(3d face),(worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale),(multiple legs:1.5),(extra legs:1.5),(wrong legs),(multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'posPrompt': "8k portrait,1{{gender_des}}, captivating portrait,spots car behind,black business suit,(upper body), best quality,high definition, sharp focus,, (original illustration composition),",
+            'negPrompt': "(worst quality, low quality), badhandv4, EasyNegative, ng_deepnegative_v1_75t,",
             'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler-a',
+            'sampler': 'euler_a',
             'steps': 25,
             'width': 512,
-            'height': 768
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
-    retain_code = ['200014']
+    retain_code = ['200015']
     prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
     return prompt_list
 
@@ -721,8 +722,8 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['zkj']
-    train_image_sex_code_list = [100002]
+    train_image_name_list = ['shr']
+    train_image_sex_code_list = [100001]
     train_image_age_list = [25]
     params_dict_list = [
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
