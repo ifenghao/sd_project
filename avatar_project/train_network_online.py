@@ -52,6 +52,7 @@ from diffusers import (
 )
 from library.lpw_stable_diffusion import StableDiffusionLongPromptWeightingPipeline
 import re
+import gc
 
 # scheduler:
 SCHEDULER_LINEAR_START = 0.00085
@@ -1042,7 +1043,13 @@ def train(args):
         save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
 
         print("model saved.")
-    return output_images_all, text_encoder, vae, unet
+    
+    text_encoder, vae, unet = text_encoder.cpu(), vae.cpu(), unet.cpu()
+    del text_encoder, vae, unet
+    gc.collect()
+    torch.cuda.empty_cache()
+    print("clear memory usage")
+    return output_images_all
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -1205,7 +1212,6 @@ def train_online(lora_name, model_input_path, model_path, log_path, output_path,
     args.seed=seed
 
     output_sample_images = train(args)
-    torch.cuda.empty_cache()
     return output_sample_images
 
 

@@ -61,6 +61,7 @@ import math
 import os
 import random
 import re
+import gc
 
 import diffusers
 import numpy as np
@@ -3447,6 +3448,11 @@ def main(args):
             batch_data.clear()
 
     print("done!")
+    text_encoder, vae, unet = text_encoder.cpu(), vae.cpu(), unet.cpu()
+    del text_encoder, vae, unet
+    gc.collect()
+    torch.cuda.empty_cache()
+    print("clear memory usage")
     return output_images
 
 
@@ -3743,7 +3749,6 @@ def gen_img(outdir, network_weights=[],
         args.strength = 0.2      
 
     output_images = main(args)
-    torch.cuda.empty_cache()
     return output_images
 
 

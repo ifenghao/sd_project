@@ -247,7 +247,7 @@ class ModelImageProcessor:
     
     def generate(self, style_res_list, images_per_prompt, use_step=-1, highres_fix=False, params={}):
         model_file_list = os.listdir(self.model_path)
-        model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
+        # model_file_list = list(filter(lambda t: t.startswith(self.order_id), model_file_list))
         total_steps = len(model_file_list)
         if total_steps == 0 or use_step >= total_steps:
             print('No lora model is loaded')
@@ -393,16 +393,17 @@ def parse_gen_info(style_infos, gender_des, gender, age_des):
     return gen_img_pass_list
 
 
-def generate_prompt():
+def generate_prompt(sex):
     prompt_list = []
     prompt_list.append(
         {
             'code': '200001',
-            'posPrompt': " (wearing equitation_outfit, wearing cap:1.3), white equitation_outfit, good hand,4k, high-res, masterpiece, best quality, head:1.3,((Hasselblad photography)), finely detailed skin, sharp focus, (cinematic lighting), night, soft lighting, dynamic angle, [:(detailed face:1.2):0.2], medium breasts,(((in front of a crowd))), outside",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}}, ((delicate skin)),mechanical collar,abstract art, half cyberpunk machine melting into human face, beautiful, colorful paint skin, bobcut, portrait, extreme detail, (colorful background:1.2), color splash,Neon city, RAW candid cinema, 16mm, color graded portra 400 film, remarkable color, ultra realistic, remarkable detailed pupils, shot with cinematic camera, 8K",
+            'negPrompt': "(worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'network_weights': ['train.safetensors', 'more_details.safetensors'],
+            'network_mul': [1.0, 0.6],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
@@ -415,26 +416,29 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200002',
-            'posPrompt': "mj3d style,3dmm,3d,(masterpiece, best quality:1.1), elf, light blue hair, glasses, mole on mouth ,anime , (smile:0.5), 1{{gender_des}}, upper body, {{age_des}}",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}}, tohsaka rin, solo,long hair, white shirt, looking at viewer,(charcoal gray background:1.3), [pink hair : green hair : 0.2], simple background, two side up, blue eyes, lips, closed mouth, ribbon, hair ribbon, bangs, turtleneck shirt , upper body, parted bangs, twintails, nose",
+            'negPrompt': "badhandv4, paintings, sketches, (worst qualit:2), (low quality:2), (normal quality:2), lowers, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, muted arms, hused arms, neck lace, analog, analog effects, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5)",
+            'ckpt': 'revAnimated_v122.safetensors',
+            'network_weights': ['train.safetensors', '3DMM_V12.safetensors'],
+            'network_mul': [0.7, 0.8],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler_a',
-            'steps': 30,
+            'sampler': 'euler',
+            'steps': 20,
             'width': 512,
-            'height': 768
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
     prompt_list.append(
         {
             'code': '200003',
-            'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, 1{{gender_des}}, upper body, {{age_des}}",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'sex': 100003,
+            'posPrompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{{gender_des}}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {{age_des}} a little bit older",
+            'negPrompt': "(realistic),(3d face), (monochrome:1.1), (greyscale), (multiple hands),(missing limb),(multiple bodies:1.5),garter straps,multiple heels,legwear,thghhighs,stockings,golden shoes,railing,glass, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -449,9 +453,10 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200004',
-            'posPrompt': "((master piece)),best quality, illustration, 1{{gender_des}}, upper body, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {{age_des}}",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'sex': 100003,
+            'posPrompt': "((master piece)),best quality, illustration, 1{{gender_des}}, upper body, sharp focus, Look out the window, beautiful detailed eyes, (beautiful detailed cyberpunk city), beautiful detailed hair, {{age_des}}",
+            'negPrompt': "((grayscale)), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -466,9 +471,10 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200005',
-            'posPrompt': "Ambilight, masterpiece, ultra-high quality,( ultra detailed original illustration),( 1{{gender_des}}, upper body),(( harajuku fashion)),(( flowers with human eyes, flower eyes)), double exposure, fussion of fluid abstract art, glitch,( 2d),( original illustration composition),( fusion of limited color, maximalism artstyle, geometric artstyle, butterflies, junk art), {{age_des}}",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
+            'sex': 100003,
+            'posPrompt': "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree on head, broken glass, (masterpiece, sidelighting1.2), shoulders, upper body, finely detailed beautiful eyes, hdr, 1{{gender_des}}, {{age_des}}",
+            'negPrompt': "multiple limbs, bad anatomy, crown braid, ((duplicate)), bad-artist, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
@@ -483,16 +489,17 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200006',
-            'posPrompt': "((master piece)),best quality, illustration, dark, 1{{gender_des}}, upper body, In the wilderness,High mountain,Snow-capped mountains in the distance, castle, beautiful detailed eyes, beautiful detailed hair, {{age_des}}",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'dreamshaper_631BakedVae.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
+            'sex': 100002,
+            'posPrompt': "masterpiece, best quality,RAW,(expensive portrait of a {{gender_des}}), gorgeous strapless evening gown,exquisite necklace,exquisite earrings,delicate skin,detailed hair, perfect face, beautiful face, detailed eyes,smiling eyes,smiling,beautiful eyelashes,looking at viewer, (((half-length portrait))), professional lighting, photography studio,artistic black background, god rays, artistic photography, detailed face, (body towards viewer),night,light on face,volumetric lighting,tyndall effect,rim lighting,Bokeh,DSLR",
+            'negPrompt': "(large breasts:1.3), bad eyes, Cross eyes, strabismus, squint,bae face ,too fat, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
+            'network_weights': ['train.safetensors', 'more_details.safetensors'],
+            'network_mul': [1.0, 0.8],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler_a',
-            'steps': 30,
+            'sampler': 'euler',
+            'steps': 25,
             'width': 512,
             'height': 768
         },
@@ -500,11 +507,12 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200007',
-            'posPrompt': "1{{gender_des}}, solo, long hair, looking at viewer, colorful background, colorful hair, simple background, colorful eyes, lips, closed mouth, ribbon, hair ribbon, bangs,school uniform, upper body, parted bangs, colorful ribbon , nose",
-            'negPrompt': "NG_DeepNagetive_V1_75T,(greyscale:1.2),naked, nude, nipples, vagina, nsfw, paintings, sketches, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, glans",
-            'ckpt': 'revAnimated_v122.safetensors',
-            'network_weights': ['train.safetensors','3DMM_V12.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.75,0.1],
+            'sex': 100002,
+            'posPrompt': "(Best portrait photography), 35mm film,RAW, realistic, 8k, official art, cinematic light,luminous skin, natural blurry, 1 {{gender}}, (upper body:1.3) ,perfect eyes ,make up, chuckle,sun dress , golden sunlight, shallow depth of field, bokeh,dreamy pastel palette, whimsical details, captured on film,looking at viewer,",
+            'negPrompt': "(large breasts:1.3), bad eyes, Cross eyes, strabismus, squint,bae face ,too fat, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
@@ -517,28 +525,12 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200009',
-            'posPrompt': "1{{gender_des}}, ((delicate skin)),mechanical collar,abstract art, half cyberpunk machine melting into human face, beautiful, colorful paint skin, bobcut, portrait, extreme detail, (colorful background:1.2), color splash,Neon city, RAW candid cinema, 16mm, color graded portra 400 film, remarkable color, ultra realistic, remarkable detailed pupils, shot with cinematic camera, 8K",
-            'negPrompt': "easynegative, CyberRealistic_Negative-neg, ng_deepnegative_v1_75t",
-            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'sex': 100002,
+            'posPrompt': "masterpiece, best quality, 1{{gender_des}}, ((close up)) ,solo, (natural skin texture, realistic eye and face details:1.5), (dark:1.4), deep shadow, darkness, moonlight, award winning photo, extremely detailed, amazing, fine detail, absurdres, highly detailed woman, extremely detailed eyes and face, piercing red eyes, detailed clothes, skinny, (gothic), twintails, bangs, frills, skirt,(((red hair))), by lee jeffries, nikon d850 film, stock photograph, kodak, portra 400 camera f1.6 lens, rich colors, hyper realistic, lifelike texture, dramatic, lighting, unrealengine, trending on artstation, cinestill 800 tungsten, Style-Neeko, (facial clarity:1.5),transparent clothes,anatomical,gothic style, black lace, half classicism half surrealism aristocratic lady, mystery style tattoo, fantasy",
+            'negPrompt': "(large breasts:1.3), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
             'network_weights': ['train.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.5],
-            'scale': 7,
-            'negative_scale': None,
-            'seed': None,
-            'sampler': 'euler_a',
-            'steps': 27,
-            'width': 512,
-            'height': 768
-        },
-    )
-    prompt_list.append(
-        {
-            'code': '200010',
-            'posPrompt': "best quality,masterpiece,highres,1{{gender_des}},blush,(seductive smile:0.8),star-shaped pupils,red china hanfu,hanfu,chinese clothes,hair ornament,necklace,jewelry,Beautiful face,upon_body,tyndall effect,photorealistic,dark studio,rim lighting,two tone lighting,(high detailed skin:1.2),8k uhd,dslr,soft lighting,high quality,volumetric lighting,candid,Photograph,high resolution,4k,8k,Bokeh",
-            'negPrompt': "(((simple background))),monochrome,lowres,bad anatomy,bad hands,text,error,missing fingers,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,blurry,lowres,bad anatomy,bad hands,text,error,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,blurry,ugly,pregnant,vore,duplicate,morbid,mut ilated,tran nsexual,hermaphrodite,long neck,mutated hands,poorly drawn hands,poorly drawn face,mutation,deformed,blurry,bad anatomy,bad proportions,malformed limbs,extra limbs,cloned face,disfigured,gross proportions,(((missing arms))),(((missing legs))),(((extra arms))),(((extra legs))),pubic hair,plump,bad legs,error legs,username,blurry,bad feet, badhandv4, CyberRealistic_Negative-neg, EasyNegative, ng_deepnegative_v1_75t",
-            'ckpt': '3Guofeng3_v32Light.safetensors',
-            'network_weights': ['train.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.6],
+            'network_mul': [0.8,0.3],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
@@ -550,29 +542,51 @@ def generate_prompt():
     )
     prompt_list.append(
         {
-            'code': '200011',
-            'posPrompt': "masterpiece, best quality,RAW,(expensive portrait of a {{gender_des}}), gorgeous strapless evening gown,exquisite necklace,exquisite earrings,delicate skin,detailed hair, perfect face, beautiful face, detailed eyes,smiling eyes,smiling,beautiful eyelashes,looking at viewer, (((half-length portrait))), professional lighting, photography studio,artistic black background, god rays, artistic photography, detailed face, (body towards viewer),night,light on face,volumetric lighting,tyndall effect,rim lighting,Bokeh,DSLR",
-            'negPrompt': "(worst quality, low quality, bad_pictures, negative_hand-neg:1.2)(large breasts:1.3),EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
-            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
-            'network_weights': ['train.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.8],
-            'scale': 7,
+            'code': '200010',
+            'sex': 100003,
+            'posPrompt': "8k portrait of {{gender}} celestial, 1{{gender_des}}, deity, Style-Gravitymagic, sparkle, light particles, halo, looking at viewer, bioluminescent flame, bioluminescence, phoenix, beautiful eyes, (upper body:1.2), Vibrant, Colorful, Color, 8k, high quality, hyper realistic, professional photography, {{age_des}}",
+            'negPrompt': "(duplicate), ((full body)), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 9,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler',
-            'steps': 25,
+            'sampler': 'euler_a',
+            'steps': 30,
             'width': 512,
-            'height': 768
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200011',
+            'sex': 100003,
+            'posPrompt': "8k portrait, Chaos, magical planet, universe, Milky Way, spacecraft, beautiful eyes, (upper body:1.2), vibrant colors, highly detailed, digital painting, Style-Gravitymagic, artstation, concept art, smooth, (sharp focus), (double exposure), illustration, Unreal Engine 5, 8K, 1{{gender_des}}, {{age_des}}",
+            'negPrompt': "(duplicate), ((full body)), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 9,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
     prompt_list.append(
         {
             'code': '200012',
-            'posPrompt': "Best portrait photography, 35mm film, natural blurry, 1{{gender_des}}, sun dress, wide brimmed hat, radiant complexion, whimsical pose, fluttering hair, golden sunlight, macro shot, shallow depth of field, bokeh, dreamy",
-            'negPrompt': "(worst quality, low quality, bad_pictures, negative_hand-neg:1.2)(large breasts:1.3),EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
-            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
-            'network_weights': ['train.safetensors','more_details.safetensors'],
-            'network_mul': [1.0,0.8],
+            'sex': 100002,
+            'posPrompt': "masterpiece, best quality, ((pure white background)), upper body,(big wavy hairstyle),cold face, portrait,Enchanting gaze, white T-shirt, happy, light effect, soft, super clear, high-definition picture, (front),(realistic eye :1.5),piercing eyes",
+            'negPrompt': "nasolabial folds,paintings, sketches, fingers, (worst quality:2), (low quality:2), (normal quality:2), lowres, normal quality, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), backlight,(ugly:1.331), (duplicate:1.331), (morbid:1.21), (mutilated:1.21), (tranny:1.331), mutated hands, (poorly drawn hands:1.5), blurry, (bad anatomy:1.21), (bad proportions:1.331), extra limbs, (disfigured:1.331), (more than 2 nipples:1.331), (missing arms:1.331), (extra legs:1.331), (fused fingers:1.61051), (too many fingers:1.61051), (unclear eyes:1.331), lowers, bad hands, missing fingers, extra digit, (futa:1.1),bad hands, missing fingers,badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'Crispmix_v10Cucumber.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [0.8],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
@@ -585,15 +599,109 @@ def generate_prompt():
     prompt_list.append(
         {
             'code': '200013',
-            'posPrompt': "1{{gender_des}} in a modern, elegant ball gown, styled with a sleek updo and minimalist jewelry, confident regal expression, luxurious modern palace, clean lines, high ceilings, extravagant chandeliers, high definition, sharp focus, soft blurred background, captivating portrait,upper body, diamond diadema on head,a little bit confident smile",
-            'negPrompt': "(worst quality, low quality), badhandv4, EasyNegative, ng_deepnegative_v1_75t,",
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}} in a modern, elegant ball gown, styled with a sleek updo and minimalist jewelry, confident regal expression, luxurious modern palace, clean lines, high ceilings, extravagant chandeliers, high definition, sharp focus, soft blurred background, captivating portrait,upper body, diamond diadema on head,a little bit smile",
+            'negPrompt': "(worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
             'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
             'scale': 7,
             'negative_scale': None,
             'seed': None,
-            'sampler': 'euler-a',
+            'sampler': 'euler_a',
+            'steps': 25,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200014',
+            'sex': 100002,
+            'posPrompt': "(best quality, masterpiece), (finely detailed),1{{gender_des}}, looking at viewer,close up, cute, (8k, 4k, high definition, best quality:1.5), cinematic lighting, studio lighting",
+            'negPrompt': "NSFW, drawn by bad-artist, sketch by bad-artist-anime, (artist name, signature, watermark:1.4), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75",
+            'ckpt': 'disneyPixarCartoon_v10.safetensors',
+            'network_weights': ['train.safetensors','more_details.safetensors'],
+            'network_mul': [0.9, 0.4],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler',
+            'steps': 20,
+            'width': 512,
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200015',
+            'sex': 100003,
+            'posPrompt': "masterpiece, best quality,1{{gender_des}}, upper body, looking at viewer, pencil sketch, , line quality,clearly , low saturation,monochrome photo,artistry",
+            'negPrompt': "Indian,thick lips, colorful, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
+            'network_weights': ['train.safetensors', 'more_details.safetensors', 'Drawing.safetensors'],
+            'network_mul': [1.0, 0.35, 0.6],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 20,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200016',
+            'sex': 100003,
+            'posPrompt': "Style-PaintMagic, photo of a beautiful goth {{gender_des}} with thick flowing (liquid paint rainbow hair:1.2) made of paint and defies gravity, space background, highly detailed, intricate, amazing, trending, paint splatter, paint drops, sharp focus",
+            'negPrompt': "(watermarks:1.2), username, paintings, sketches, ((disfigured)), ((bad art)), ((deformed)),((extra limbs)),((full body)),((b&w)), wierd colors, (((duplicate))), ((morbid)), ((mutilated)), [out of frame], (duplicate), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'dreamshaper_7.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200017',
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}},(3d),8K,wearing a qingchao_dress,(high quality),(qingchao_haircut, qingchao_scarf), The Forbidden City background, confident regal expression, luxurious modern palace,clean lines, high definition, (sharp focus), captivating portrait,(upper body),a little bit smile,(human eyes)",
+            'negPrompt': "(worst quality, low quality), badhandv4, ng_deepnegative_v1_75t",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'network_weights': ['train.safetensors', 'QingChao.safetensors'],
+            'network_mul': [1.0, 0.7],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 30,
+            'width': 512,
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200018',
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}},( original illustration composition),8k,(updo hair),(flower eyes),confident regal expression,village background,(Miao costume),((Miao Silver full of head)), clean lines, high ceilings, high definition, (sharp focus), (realistic) ,((upper body)),a little bit smile",
+            'negPrompt': "(worst quality, low quality), badhandv4, ng_deepnegative_v1_75t",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'network_weights': ['train.safetensors', 'miaoLan_165.safetensors'],
+            'network_mul': [1.0, 0.6],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
             'steps': 25,
             'width': 512,
             'height': 768
@@ -601,26 +709,120 @@ def generate_prompt():
     )
     prompt_list.append(
         {
-            'code': '200014',
-            'posPrompt': "Style-PaintMagic, photo of a beautiful goth girl with thick flowing (liquid paint rainbow hair:1.1) made of paint and defies gravity, space background, highly detailed, intricate, amazing, trending, paint splatter, paint drops",
-            'negPrompt': "bad anatomy, low-res, (watermarks:1.2), username, paintings, sketches, (worst quality:2), hat, hats,(low quality:2), (normal quality:2), monochrome, grayscale, (easynegative:1.1), [ng_deepnegative_v1_75t] bad anatomy, low-res, poorly drawn face, disfigured hands, poorly drawn eyebrows, bad body perspective, animal tail, anime, nipples, pussy, wrong anatomy, poorly drawn legs, wrong perspective legs, poorly drawn hands, (bad-hands-5:1.8), wrong hand, yellow light, canvas frame, cartoon, 3d, ((disfigured)), ((bad art)), ((deformed)),((extra limbs)),((close up)),((b&w)), wierd colors, blurry, (((duplicate))), ((morbid)), ((mutilated)), [out of frame], signature, watermarks, vile_prompt3",
-            'ckpt': 'dreamshaper_7.safetensors',
-            'network_weights': ['train.safetensors'],
-            'network_mul': [1.0],
-            'scale': 9,
+            'code': '200019',
+            'sex': 100002,
+            'posPrompt': "1{{gender_des}}, detailed face, detailed eyes,smiling eyes, Lace Choker,golden hair,bang,Jewelry,Luxurious sweet lolita lace, looking at view, clean lines,high definition, (sharp focus), (realistic), upper body",
+            'negPrompt': "(worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'network_weights': ['train.safetensors', 'lo_dress_vol2_style1_v1.safetensors'],
+            'network_mul': [1.0, 0.4],
+            'scale': 7,
             'negative_scale': None,
             'seed': None,
             'sampler': 'euler_a',
             'steps': 30,
             'width': 512,
-            'height': 768
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
     prompt_list.append(
         {
-            'code': '200015',
-            'posPrompt': "8k portrait,1{{gender_des}}, captivating portrait,spots car behind,black business suit,(upper body), best quality,high definition, sharp focus,, (original illustration composition),",
-            'negPrompt': "(worst quality, low quality), badhandv4, EasyNegative, ng_deepnegative_v1_75t,",
+            'code': '200020',
+            'sex': 100001,
+            'posPrompt': "best quality, masterpiece), (finely detailed),1 young man,portrait, looking at viewer,close up, (8k, 4k, high definition, best quality:1.5), cinematic lighting, cute,studio lighting",
+            'negPrompt': "NSFW,EasyNegative, drawn by bad-artist, sketch by bad-artist-anime, (bad_prompt_version2-neg:0.8), (artist name, signature, watermark:1.4), (ugly:1.2), (worst quality, poor details:1.4), bad-hands-5, , blurry, lowres, bad anatomy, naked, nude, nipples, BadDream, FastNegativeV2, EasyNegative, ng_deepnegative_v1_75t, badhandv4",
+            'ckpt': 'disneyPixarCartoon_v10.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [0.9],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler',
+            'steps': 20,
+            'width': 512,
+            'height': 768,
+            'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200021',
+            'sex': 100001,
+            'posPrompt': "1{{gender_des}},portrait,((delicate skin)),mechanical collar,abstract art, half cyberpunk machine melting into human face, handsome, colorful paint skin, short hair,extreme detail, (colorful background:1.2), color splash,Neon city, RAW candid cinema, 16mm, color graded portra 400 film, remarkable color, ultra realistic, remarkable detailed pupils, shot with cinematic camera, 8K",
+            'negPrompt': "(worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'majicmixRealistic_v6.safetensors',
+            'network_weights': ['train.safetensors', 'more_details.safetensors'],
+            'network_mul': [1.0, 0.6],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler',
+            'steps': 30,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200022',
+            'sex': 100001,
+            'posPrompt': "1{{gender_des}}, portrait,solo, shor hair, black sweater, looking at viewer, blue background,simple background, black eyes, lips, closed mouth, upper body, nose",
+            'negPrompt': "((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, (outdoor:1.6), manboobs, (backlight:1.2), double navel, (sunglass:1.4), nipples, nsfw, bad architecture, watermark, (mole:1.5), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
+            'ckpt': 'revAnimated_v122.safetensors',
+            'network_weights': ['train.safetensors', '3DMM_V12.safetensors'],
+            'network_mul': [0.85, 0.75],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler',
+            'steps': 20,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200023',
+            'sex': 100001,
+            'posPrompt': "(Best portrait photography), 35mm film,RAW, realistic, 8k, official art, cinematic light,luminous skin, natural blurry, 1 {{gender}},silver hair, beard, (upper body:1.3),detailed eyes,piercing eyes,Healthy and robust ,handsome, Tanned and healthy complexion,Radiant expression,Sporty casual,chuckle,golden sunlight, shallow depth of field, bokeh,dreamy pastel palette, whimsical details, captured on film,looking at viewer",
+            'negPrompt': "(large breasts:1.3), bad eyes, Cross eyes, strabismus, squint,bae face ,too fat, (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
+            'network_weights': ['train.safetensors'],
+            'network_mul': [1.0],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 27,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200024',
+            'sex': 100001,
+            'posPrompt': "masterpiece, best quality, 1{{gender_des}}, ((close up)),solo, (natural skin texture, realistic eye and face details:1.5),(dark:1.4), deep shadow, darkness, moonlight, award winning photo, extremely detailed, amazing, fine detail, absurdres,extremely detailed eyes and face, piercing red eyes, detailed clothes, (gothic), short hair,(((red hair))), nikon d850 film, stock photograph, kodak, portra 400 camera f1.6 lens, rich colors, hyper realistic, lifelike texture, dramatic, lighting, unrealengine, trending on artstation, cinestill 800 tungsten, Style-Neeko, (facial clarity:1.5),anatomical, half classicism half surrealism aristocratic gentleman, mystery style tattoo, fantasy",
+            'negPrompt': "(large breasts:1.3), (worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t, CyberRealistic_Negative-neg",
+            'ckpt': 'leosamsMoonfilm_filmGrain20.safetensors',
+            'network_weights': ['train.safetensors', 'more_details.safetensors'],
+            'network_mul': [0.8, 0.3],
+            'scale': 7,
+            'negative_scale': None,
+            'seed': None,
+            'sampler': 'euler_a',
+            'steps': 20,
+            'width': 512,
+            'height': 768,
+        },
+    )
+    prompt_list.append(
+        {
+            'code': '200025',
+            'sex': 100001,
+            'posPrompt': "8k portrait,1{{gender_des}}, captivating portrait,spots car behind,black business suit,(upper body), best quality,high definition, sharp focus, (original illustration composition),(human eyes)",
+            'negPrompt': "(worst quality, low quality, bad_pictures), blurry, lowres, bad anatomy, naked, nude, nipples, vagina, glans, ugly, pregnant, vore, duplicate, morbid,mut ilated, tran nsexual, hermaphrodite, long neck, BadDream, FastNegativeV2, badhandv4, EasyNegative, ng_deepnegative_v1_75t",
             'ckpt': 'majicmixRealistic_v6.safetensors',
             'network_weights': ['train.safetensors'],
             'network_mul': [1.0],
@@ -634,8 +836,10 @@ def generate_prompt():
             'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
-    retain_code = ['200015']
-    prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
+    # retain_code = ['200016', '200010', '200011']
+    # prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
+    sex_code = [100003, sex]
+    prompt_list = list(filter(lambda item: item['sex'] in sex_code, prompt_list))
     return prompt_list
 
 
@@ -722,9 +926,9 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['shr']
-    train_image_sex_code_list = [100001]
-    train_image_age_list = [25]
+    train_image_name_list = ['fan', 'cc', 'girl1', 'girl2', 'girl3', 'girl4', 'girl5', 'girl6']
+    train_image_sex_code_list = [100002, 100002, 100002, 100002, 100002, 100002, 100002, 100002]
+    train_image_age_list = [25, 25, 25, 25, 25, 25, 25, 25]
     params_dict_list = [
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         {'base_model_path': 'dreamshaper_7.safetensors', 'seed': 47},
@@ -735,9 +939,9 @@ if __name__ == '__main__':
     gen_params_dict = {'seed': 47}
     images_per_prompt = 4
     # style_res_list = transfer_prompt()
-    style_res_list = generate_prompt()
     for name, sex_code, age in zip(train_image_name_list, train_image_sex_code_list, train_image_age_list):
-        print(name)
+        print(name, '男' if sex_code == 100001 else '女')
+        style_res_list = generate_prompt(sex_code)
         for params in params_dict_list:
             model_processor = ModelImageProcessor(user_id=None, 
                                                 order_id=name, 
