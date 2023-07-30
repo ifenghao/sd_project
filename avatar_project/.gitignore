@@ -6,19 +6,20 @@ __pycache__
 
 conf.json
 
+*.ckpt
+*.safetensors
+*.pth
+*.pt
+
 train/*
 !train/new lora will be create.txt
 raw_images/*
 !raw_images/put raw image here.txt
 outputs/*
 !outputs/lora inference result.txt
-models/*
-!models/put all models here.txt
-!models/stable-diffusion/put ckpt models here.txt
-!models/lora/put lora models here.txt
-!models/vae/put vae models here.txt
-!models/embeddings
+
+models/wd14_tagger_model/*
 
 train_online/*
-!train/new lora will be create.txt
+!train_online/new lora will be create.txt
 logs/*

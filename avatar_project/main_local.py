@@ -840,8 +840,8 @@ def generate_prompt(sex):
             'vae': 'vae-ft-mse-840000-ema-pruned.safetensors'
         },
     )
-    # retain_code = ['200016', '200010', '200011']
-    # prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
+    retain_code = ['200019']
+    prompt_list = list(filter(lambda item: item['code'] in retain_code, prompt_list))
     sex_code = [100003, sex]
     prompt_list = list(filter(lambda item: item['sex'] in sex_code, prompt_list))
     return prompt_list
@@ -930,9 +930,9 @@ if __name__ == '__main__':
 
     raw_path = './raw_images'
     root_path = './train'
-    train_image_name_list = ['girl2', 'girl3', 'girl4', 'girl5', 'girl6']
-    train_image_sex_code_list = [100002, 100002, 100002, 100002, 100002]
-    train_image_age_list = [25, 25, 25, 25, 25]
+    train_image_name_list = ['girl_ol']
+    train_image_sex_code_list = [100002]
+    train_image_age_list = [25]
     params_dict_list = [
         # {'base_model_path': 'majicmixRealistic_v6.safetensors', 'seed': 47},
         {'base_model_path': 'dreamshaper_7.safetensors', 'seed': 47},
@@ -941,7 +941,7 @@ if __name__ == '__main__':
         # {'base_model_path': 'revAnimated_v122.safetensors', 'seed': 47},
     ]
     gen_params_dict = {'seed': 47}
-    images_per_prompt = 4
+    images_per_prompt = 6
     # style_res_list = transfer_prompt()
     for name, sex_code, age in zip(train_image_name_list, train_image_sex_code_list, train_image_age_list):
         print(name, '男' if sex_code == 100001 else '女')
