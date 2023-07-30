@@ -3450,6 +3450,11 @@ def main(args):
     print("done!")
     text_encoder, vae, unet = text_encoder.cpu(), vae.cpu(), unet.cpu()
     del text_encoder, vae, unet
+    for network in networks:
+        network = network.cpu()
+        del network
+    del networks
+    del pipe
     gc.collect()
     torch.cuda.empty_cache()
     print("clear memory usage")

@@ -1046,6 +1046,8 @@ def train(args):
     
     text_encoder, vae, unet = text_encoder.cpu(), vae.cpu(), unet.cpu()
     del text_encoder, vae, unet
+    network = network.cpu()
+    del network
     gc.collect()
     torch.cuda.empty_cache()
     print("clear memory usage")

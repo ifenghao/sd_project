@@ -34,8 +34,9 @@ class ModelPreprocessing:
                     image_path    = os.path.join(root, file_name)
                     image, face = self.get_face_detect_result(image_path)
                     if face is None:
-                        self.copy_image_to_folder(crop_path, image_path)
-                        copy_num += 1
+                        if image is not None:
+                            self.copy_image_to_folder(crop_path, image_path)
+                            copy_num += 1
                     else:
                         max_scale = self.get_max_face_scale(image, face)
                         scale_step = (max_scale - min_scale) / scales_num
@@ -116,17 +117,20 @@ class ModelPreprocessing:
 
     def get_face_detect_result(self, image_path, min_face_reso=32):
         try : 
-            image = cv2.imread(image_path) 
+            image = cv2.imread(image_path)
+            if image is None:
+                self.logger.warning(f"图片无法读取:{image_path}")
+                return image, None
             gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             faces = self.detector(gray)
 
             if len(faces) != 1 : 
-                return None, None 
+                return image, None
             else:
                 face = faces[0]
                 w, h = face.width(), face.height()
                 if w <= min_face_reso and h <= min_face_reso:
-                    return None, None
+                    return image, None
                 return image, face
         except Exception as e:
             self.logger.error(f"截取头像失败:{e},{image_path}")
